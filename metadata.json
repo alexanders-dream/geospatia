@@ -1,0 +1,5 @@
+{
+  "name": "GeoSpatia: Global Intelligence",
+  "description": "A 3D geospatial dashboard integrating Google 3D Tiles, live flight tracking, satellite orbits, seismic activity, and environmental monitoring.",
+  "requestFramePermissions": ["geolocation"]
+}

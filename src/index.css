@@ -1,0 +1,43 @@
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@import "tailwindcss";
+
+/* Custom thin scrollbar for sidebar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #1e2e40;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #2e4a60;
+}
+
+/* Timeline slider styling */
+.timeline-slider {
+  -webkit-appearance: none;
+  height: 3px;
+  background: #1e2e40;
+  border-radius: 3px;
+  outline: none;
+}
+
+.timeline-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #1d9e75;
+  border: 2px solid #0d1520;
+  cursor: pointer;
+}

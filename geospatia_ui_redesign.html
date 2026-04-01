@@ -1,0 +1,374 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  .app { display: flex; height: 620px; background: #0a0f14; color: #c8d8e8; font-size: 13px; border-radius: var(--border-radius-lg); overflow: hidden; }
+
+  .sidebar { width: 260px; min-width: 260px; background: #0d1520; border-right: 0.5px solid #1e2e40; display: flex; flex-direction: column; overflow: hidden; }
+  .sidebar-header { padding: 14px 16px 10px; border-bottom: 0.5px solid #1e2e40; }
+  .logo { display: flex; align-items: center; gap: 8px; }
+  .logo-icon { width: 22px; height: 22px; border-radius: 50%; background: #0f6e56; display: flex; align-items: center; justify-content: center; }
+  .logo-icon svg { width: 13px; height: 13px; }
+  .logo-name { font-size: 13px; font-weight: 500; color: #e0eef8; letter-spacing: 0.08em; }
+  .logo-sub { font-size: 10px; color: #3a7a60; letter-spacing: 0.15em; margin-top: 1px; }
+
+  .search-bar { margin: 10px 12px; display: flex; align-items: center; gap: 6px; background: #0a1018; border: 0.5px solid #1e2e40; border-radius: 6px; padding: 6px 10px; }
+  .search-bar input { background: none; border: none; outline: none; color: #c8d8e8; font-size: 12px; width: 100%; font-family: var(--font-sans); }
+  .search-bar input::placeholder { color: #3d5568; }
+  .search-icon { color: #3d5568; flex-shrink: 0; }
+
+  .layer-scroll { flex: 1; overflow-y: auto; padding: 6px 0 12px; }
+  .layer-scroll::-webkit-scrollbar { width: 3px; }
+  .layer-scroll::-webkit-scrollbar-thumb { background: #1e2e40; border-radius: 3px; }
+
+  .layer-group { margin-bottom: 6px; }
+  .layer-group-label { font-size: 9px; font-weight: 500; letter-spacing: 0.15em; color: #3d5568; padding: 10px 16px 4px; text-transform: uppercase; }
+  .layer-row { display: flex; align-items: center; gap: 10px; padding: 7px 16px; cursor: pointer; border-radius: 0; transition: background 0.12s; }
+  .layer-row:hover { background: #111e2a; }
+  .layer-row.active { background: #0d1e2c; }
+  .layer-icon { width: 24px; height: 24px; border-radius: 5px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; }
+  .layer-icon.teal { background: #0a2e26; color: #1d9e75; }
+  .layer-icon.blue { background: #0a1e36; color: #378add; }
+  .layer-icon.amber { background: #2a1c08; color: #ef9f27; }
+  .layer-icon.coral { background: #2a1008; color: #d85a30; }
+  .layer-icon.purple { background: #1a1430; color: #7f77dd; }
+  .layer-icon.gray { background: #181e26; color: #888780; }
+  .layer-label { flex: 1; font-size: 12px; color: #9ab0c2; }
+  .layer-row.active .layer-label { color: #d8eaf8; }
+  .toggle { width: 28px; height: 16px; border-radius: 8px; background: #1e2e40; position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+  .toggle.on { background: #0f6e56; }
+  .toggle::after { content: ''; position: absolute; width: 12px; height: 12px; border-radius: 50%; background: #6a8898; top: 2px; left: 2px; transition: left 0.2s, background 0.2s; }
+  .toggle.on::after { left: 14px; background: #fff; }
+
+  .main { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  .globe-area { flex: 1; position: relative; background: radial-gradient(ellipse at 45% 45%, #0d2236 0%, #060c12 70%); display: flex; align-items: center; justify-content: center; }
+
+  .globe-svg { width: 100%; height: 100%; }
+
+  .top-toolbar { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; }
+  .tool-btn { width: 30px; height: 30px; border-radius: 6px; background: rgba(13,21,32,0.85); border: 0.5px solid #1e2e40; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #6a8898; transition: color 0.15s, border-color 0.15s; }
+  .tool-btn:hover { color: #c8d8e8; border-color: #2e4a60; }
+
+  .search-coords { position: absolute; top: 12px; left: 12px; background: rgba(13,21,32,0.9); border: 0.5px solid #1e2e40; border-radius: 6px; padding: 6px 12px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: #6a8898; }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #1d9e75; animation: pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .bottom-strip { height: 52px; background: #0d1520; border-top: 0.5px solid #1e2e40; display: flex; align-items: center; gap: 0; padding: 0 16px; }
+  .coord-chip { display: flex; flex-direction: column; margin-right: 18px; }
+  .coord-label { font-size: 9px; color: #3d5568; letter-spacing: 0.1em; text-transform: uppercase; }
+  .coord-val { font-size: 13px; font-weight: 500; color: #7fd4b0; font-variant-numeric: tabular-nums; }
+  .divider-v { width: 0.5px; height: 24px; background: #1e2e40; margin-right: 18px; }
+  .timeline-wrap { flex: 1; display: flex; align-items: center; gap: 10px; }
+  .time-label { font-size: 10px; color: #3d5568; white-space: nowrap; }
+  .time-label.active { color: #1d9e75; }
+  .slider { flex: 1; -webkit-appearance: none; height: 3px; background: #1e2e40; border-radius: 3px; outline: none; }
+  .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #1d9e75; border: 2px solid #0d1520; cursor: pointer; }
+
+  .detail-panel { width: 220px; min-width: 220px; background: #0d1520; border-left: 0.5px solid #1e2e40; display: flex; flex-direction: column; }
+  .detail-header { padding: 12px 14px 10px; border-bottom: 0.5px solid #1e2e40; display: flex; align-items: center; justify-content: space-between; }
+  .detail-title { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #3d5568; font-weight: 500; }
+  .detail-badge { background: #0a2e26; color: #1d9e75; font-size: 10px; padding: 2px 7px; border-radius: 4px; }
+  .detail-body { padding: 12px 14px; flex: 1; }
+  .detail-id { font-size: 18px; font-weight: 500; color: #e0eef8; margin-bottom: 14px; }
+  .detail-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; }
+  .detail-key { font-size: 11px; color: #3d5568; }
+  .detail-vval { font-size: 12px; color: #9ab0c2; font-variant-numeric: tabular-nums; }
+  .detail-vval.accent { color: #7fd4b0; }
+
+  .mini-chart { margin: 8px 0; height: 42px; position: relative; }
+  .mini-chart canvas { width: 100%; height: 100%; }
+
+  .orbit-ring { fill: none; stroke: #1a3a28; stroke-width: 0.5; }
+  .orbit-path { fill: none; stroke: #1d9e75; stroke-width: 1; stroke-dasharray: 3 4; opacity: 0.6; }
+  .sat-dot { fill: #1d9e75; }
+  .sat-glow { fill: #1d9e75; opacity: 0.25; }
+  .country-path { fill: #0e1e30; stroke: #1e3a50; stroke-width: 0.4; }
+  .atmo { fill: none; stroke: #0f4a6e; stroke-width: 8; opacity: 0.18; }
+
+  .detail-actions { padding: 10px 14px; border-top: 0.5px solid #1e2e40; display: flex; gap: 6px; }
+  .action-btn { flex: 1; padding: 6px 0; border-radius: 5px; border: 0.5px solid #1e3a50; background: none; color: #9ab0c2; font-size: 11px; cursor: pointer; font-family: var(--font-sans); transition: background 0.12s; }
+  .action-btn:hover { background: #111e2a; }
+  .action-btn.primary { border-color: #0f6e56; color: #1d9e75; }
+  .action-btn.primary:hover { background: #0a2e26; }
+</style>
+
+<div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="7" cy="7" r="5.5" stroke="#1d9e75" stroke-width="1"/><ellipse cx="7" cy="7" rx="2.5" ry="5.5" stroke="#1d9e75" stroke-width="0.8"/><line x1="1.5" y1="7" x2="12.5" y2="7" stroke="#1d9e75" stroke-width="0.8"/></svg>
+        </div>
+        <div>
+          <div class="logo-name">GEOSPATIA</div>
+          <div class="logo-sub">GLOBAL INTELLIGENCE</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="search-bar">
+      <svg class="search-icon" width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1"/><line x1="7.5" y1="7.5" x2="10.5" y2="10.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+      <input placeholder="Search location or object…" />
+    </div>
+
+    <div class="layer-scroll">
+      <div class="layer-group">
+        <div class="layer-group-label">Space &amp; Astronomy</div>
+        <div class="layer-row active">
+          <div class="layer-icon teal">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="2" fill="currentColor"/><ellipse cx="6" cy="6" rx="5" ry="2" stroke="currentColor" stroke-width="0.8"/></svg>
+          </div>
+          <span class="layer-label">Satellite Tracking</span>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="layer-row active">
+          <div class="layer-icon blue">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="2.5" stroke="currentColor" stroke-width="0.9"/><line x1="6" y1="1" x2="6" y2="3" stroke="currentColor" stroke-width="0.9"/><line x1="6" y1="9" x2="6" y2="11" stroke="currentColor" stroke-width="0.9"/></svg>
+          </div>
+          <span class="layer-label">Near-Earth Objects</span>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="layer-row">
+          <div class="layer-icon purple">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 8 Q3 3 6 2 Q9 3 10 8" stroke="currentColor" stroke-width="0.9" fill="none"/><line x1="2" y1="8" x2="10" y2="8" stroke="currentColor" stroke-width="0.9"/></svg>
+          </div>
+          <span class="layer-label">Aurora Forecast</span>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="layer-row">
+          <div class="layer-icon gray">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 10 L6 4 M4 6 L6 4 L8 6" stroke="currentColor" stroke-width="0.9" stroke-linecap="round"/><circle cx="6" cy="2.5" r="1" fill="currentColor" opacity="0.6"/></svg>
+          </div>
+          <span class="layer-label">Spacecraft Launches</span>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+
+      <div class="layer-group">
+        <div class="layer-group-label">Natural Disasters</div>
+        <div class="layer-row">
+          <div class="layer-icon amber">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1 L7.5 5 L11 5 L8.5 7.5 L9.5 11 L6 9 L2.5 11 L3.5 7.5 L1 5 L4.5 5 Z" stroke="currentColor" stroke-width="0.7"/></svg>
+          </div>
+          <span class="layer-label">Seismic Activity</span>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="layer-row">
+          <div class="layer-icon coral">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 9 Q4 5 6 4 Q7 7 9 3 Q10 7 10 9" stroke="currentColor" stroke-width="0.9" fill="none" stroke-linecap="round"/></svg>
+          </div>
+          <span class="layer-label">Active Wildfires</span>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="layer-row">
+          <div class="layer-icon gray">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2 L6 6 L9 9" stroke="currentColor" stroke-width="0.9" stroke-linecap="round"/><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="0.7"/></svg>
+          </div>
+          <span class="layer-label">Volcano Eruptions</span>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+
+      <div class="layer-group">
+        <div class="layer-group-label">Infrastructure</div>
+        <div class="layer-row">
+          <div class="layer-icon blue">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 6 Q3 4 6 4 Q9 4 11 6" stroke="currentColor" stroke-width="0.9" stroke-linecap="round"/><path d="M1 8 Q3 6 6 6 Q9 6 11 8" stroke="currentColor" stroke-width="0.9" stroke-linecap="round"/></svg>
+          </div>
+          <span class="layer-label">Submarine Cables</span>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="layer-row">
+          <div class="layer-icon amber">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="2" y="8" width="8" height="2" rx="0.5" fill="currentColor" opacity="0.4"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="6" cy="4" r="1.2" fill="currentColor"/><circle cx="8.5" cy="7" r="0.8" fill="currentColor"/></svg>
+          </div>
+          <span class="layer-label">Global Night Lights</span>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main globe -->
+  <div class="main">
+    <div class="globe-area">
+      <svg class="globe-svg" viewBox="0 0 580 500" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="earthGrad" cx="42%" cy="42%">
+            <stop offset="0%" stop-color="#0e2030"/>
+            <stop offset="100%" stop-color="#060c12"/>
+          </radialGradient>
+          <radialGradient id="glowGrad" cx="50%" cy="50%">
+            <stop offset="60%" stop-color="transparent"/>
+            <stop offset="100%" stop-color="#0f4a6e" stop-opacity="0.3"/>
+          </radialGradient>
+          <clipPath id="globeClip">
+            <circle cx="290" cy="250" r="196"/>
+          </clipPath>
+        </defs>
+
+        <circle cx="290" cy="250" r="204" fill="url(#glowGrad)"/>
+        <circle cx="290" cy="250" r="196" fill="url(#earthGrad)"/>
+
+        <g clip-path="url(#globeClip)">
+          <!-- Lat/Lon grid -->
+          <ellipse cx="290" cy="250" rx="196" ry="60" class="orbit-ring"/>
+          <ellipse cx="290" cy="250" rx="196" ry="120" class="orbit-ring"/>
+          <ellipse cx="290" cy="250" rx="196" ry="175" class="orbit-ring"/>
+          <line x1="94" y1="250" x2="486" y2="250" stroke="#1a3a28" stroke-width="0.5"/>
+          <line x1="170" y1="54" x2="170" y2="446" stroke="#1a3a28" stroke-width="0.5"/>
+          <line x1="290" y1="54" x2="290" y2="446" stroke="#1a3a28" stroke-width="0.5"/>
+          <line x1="410" y1="54" x2="410" y2="446" stroke="#1a3a28" stroke-width="0.5"/>
+
+          <!-- Landmasses (simplified) -->
+          <!-- Europe -->
+          <path d="M310 130 L330 125 L345 130 L350 145 L340 158 L325 160 L315 155 L305 145 Z" class="country-path"/>
+          <!-- Africa -->
+          <path d="M300 168 L330 165 L355 175 L365 200 L360 240 L350 270 L335 290 L315 295 L298 280 L285 255 L282 225 L285 200 L290 180 Z" class="country-path"/>
+          <!-- Middle East / Central Asia -->
+          <path d="M350 148 L390 145 L415 155 L420 170 L405 180 L380 178 L360 168 Z" class="country-path"/>
+          <!-- Russia/North Asia -->
+          <path d="M340 100 L400 95 L450 105 L470 120 L460 135 L430 138 L395 130 L360 128 L340 118 Z" class="country-path"/>
+          <!-- South America -->
+          <path d="M195 220 L225 215 L242 225 L248 255 L242 290 L230 318 L215 320 L200 305 L192 275 L188 248 Z" class="country-path"/>
+          <!-- North America -->
+          <path d="M130 145 L195 140 L218 155 L220 178 L205 192 L185 195 L160 185 L138 170 Z" class="country-path"/>
+          <!-- Greenland -->
+          <path d="M265 100 L285 96 L292 108 L288 122 L275 124 L262 115 Z" class="country-path"/>
+        </g>
+
+        <!-- Globe edge -->
+        <circle cx="290" cy="250" r="196" fill="none" stroke="#1a3a28" stroke-width="0.8"/>
+
+        <!-- Atmosphere -->
+        <circle cx="290" cy="250" r="200" fill="none" stroke="#0f6e56" stroke-width="3" opacity="0.12"/>
+
+        <!-- Satellite orbit path -->
+        <ellipse cx="290" cy="250" rx="230" ry="80" class="orbit-path" transform="rotate(-18 290 250)"/>
+
+        <!-- Satellite dot -->
+        <circle cx="148" cy="198" r="8" class="sat-glow"/>
+        <circle cx="148" cy="198" r="4" class="sat-dot"/>
+        <line x1="148" y1="198" x2="148" y2="212" stroke="#1d9e75" stroke-width="0.8" opacity="0.6"/>
+        <text x="154" y="196" fill="#1d9e75" font-size="9" font-family="var(--font-sans)" opacity="0.9">HTV-X1</text>
+
+        <!-- Second satellite -->
+        <circle cx="420" cy="188" r="3" fill="#378add" opacity="0.8"/>
+        <circle cx="420" cy="188" r="6" fill="#378add" opacity="0.15"/>
+
+        <!-- NEO dot -->
+        <circle cx="480" cy="290" r="3" fill="#ef9f27" opacity="0.9"/>
+        <circle cx="480" cy="290" r="7" fill="#ef9f27" opacity="0.12"/>
+        <text x="486" y="289" fill="#ef9f27" font-size="8.5" font-family="var(--font-sans)" opacity="0.8">2025 QX4</text>
+      </svg>
+
+      <!-- Top-left live indicator -->
+      <div class="search-coords">
+        <div class="live-dot"></div>
+        <span style="color:#6a8898">LIVE FEED</span>
+        <span style="color:#3d5568;margin:0 4px">·</span>
+        <span style="color:#9ab0c2;font-variant-numeric:tabular-nums">04:18:32 UTC</span>
+      </div>
+
+      <!-- Top-right tools -->
+      <div class="top-toolbar">
+        <div class="tool-btn" title="Reset view">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1"/><line x1="6.5" y1="1.5" x2="6.5" y2="6.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><line x1="6.5" y1="6.5" x2="9.5" y2="9.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+        </div>
+        <div class="tool-btn" title="Zoom in">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="3" y1="6.5" x2="10" y2="6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="6.5" y1="3" x2="6.5" y2="10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="tool-btn" title="Zoom out">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="3" y1="6.5" x2="10" y2="6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="tool-btn" title="Settings">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="2" stroke="currentColor" stroke-width="1"/><path d="M6.5 1v1.5M6.5 10.5V12M1 6.5h1.5M10.5 6.5H12" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom strip -->
+    <div class="bottom-strip">
+      <div class="coord-chip">
+        <span class="coord-label">Lat</span>
+        <span class="coord-val">18.2209°</span>
+      </div>
+      <div class="coord-chip">
+        <span class="coord-label">Lng</span>
+        <span class="coord-val">-22.0052°</span>
+      </div>
+      <div class="coord-chip">
+        <span class="coord-label">Alt</span>
+        <span class="coord-val">412 km</span>
+      </div>
+      <div class="divider-v"></div>
+      <div class="timeline-wrap">
+        <span class="time-label">-24H</span>
+        <input type="range" class="slider" min="0" max="100" value="50" id="tslider"/>
+        <span class="time-label active">LIVE</span>
+        <span class="time-label" style="color:#3d5568">+24H</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail panel -->
+  <div class="detail-panel">
+    <div class="detail-header">
+      <span class="detail-title">Feature Details</span>
+      <span class="detail-badge">Satellite</span>
+    </div>
+    <div class="detail-body">
+      <div class="detail-id">HTV-X1</div>
+      <div class="detail-row">
+        <span class="detail-key">Altitude</span>
+        <span class="detail-vval accent">412.4 km</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-key">Velocity</span>
+        <span class="detail-vval">7.66 km/s</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-key">Inclination</span>
+        <span class="detail-vval">51.6°</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-key">Period</span>
+        <span class="detail-vval">92.8 min</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-key">NORAD ID</span>
+        <span class="detail-vval">57218</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-key">Status</span>
+        <span class="detail-vval accent">Operational</span>
+      </div>
+
+      <div style="margin-top:14px;margin-bottom:6px">
+        <span style="font-size:9px;color:#3d5568;text-transform:uppercase;letter-spacing:0.12em">Altitude track (6h)</span>
+      </div>
+      <svg width="100%" height="38" viewBox="0 0 192 38" style="display:block">
+        <polyline points="0,28 24,24 48,20 72,22 96,18 120,16 144,20 168,24 192,22" fill="none" stroke="#0f6e56" stroke-width="1.2" opacity="0.6"/>
+        <polyline points="0,28 24,24 48,20 72,22 96,18 120,16 144,20 168,24 192,22" fill="none" stroke="#1d9e75" stroke-width="1" stroke-dasharray="3 2"/>
+        <circle cx="192" cy="22" r="2.5" fill="#1d9e75"/>
+      </svg>
+    </div>
+    <div class="detail-actions">
+      <button class="action-btn primary">Track</button>
+      <button class="action-btn">History</button>
+      <button class="action-btn">Share</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const slider = document.getElementById('tslider');
+const liveLabel = document.querySelector('.time-label.active');
+slider.addEventListener('input', function() {
+  const v = parseInt(this.value);
+  if (v < 45) liveLabel.textContent = '-' + Math.round((50-v)*0.48) + 'H';
+  else if (v > 55) liveLabel.textContent = '+' + Math.round((v-50)*0.48) + 'H';
+  else liveLabel.textContent = 'LIVE';
+});
+</script>

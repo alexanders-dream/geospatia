@@ -1,0 +1,82 @@
+import React, { useState, useEffect } from 'react';
+
+interface TopBarProps {
+  onResetView: () => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onOpenSettings: () => void;
+}
+
+export default function TopBar({ onResetView, onZoomIn, onZoomOut, onOpenSettings }: TopBarProps) {
+  const [utcTime, setUtcTime] = useState('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const hours = String(now.getUTCHours()).padStart(2, '0');
+      const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+      const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+      setUtcTime(`${hours}:${minutes}:${seconds} UTC`);
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <>
+      {/* Top-left live indicator */}
+      <div className="absolute top-3 left-3 z-10 bg-[#0d1520]/90 border border-[#1e2e40]/50 rounded-md px-3 py-1.5 flex items-center gap-2 text-xs">
+        <div className="w-[6px] h-[6px] rounded-full bg-[#1d9e75]" style={{ animation: 'pulse 1.4s infinite' }} />
+        <span className="text-gray-500">LIVE FEED</span>
+        <span className="text-[#3d5568] mx-1">·</span>
+        <span className="text-[#9ab0c2] font-mono tabular-nums">{utcTime}</span>
+      </div>
+
+      {/* Top-right tool buttons */}
+      <div className="absolute top-3 right-3 z-10 flex gap-1.5">
+        <button
+          className="w-[30px] h-[30px] rounded-md bg-[#0d1520]/85 border border-[#1e2e40]/50 flex items-center justify-center text-gray-500 hover:text-gray-300 hover:border-[#2e4a60] transition-colors cursor-pointer"
+          onClick={onResetView}
+          title="Reset view"
+        >
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1" />
+            <line x1="6.5" y1="1.5" x2="6.5" y2="6.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+            <line x1="6.5" y1="6.5" x2="9.5" y2="9.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+          </svg>
+        </button>
+        <button
+          className="w-[30px] h-[30px] rounded-md bg-[#0d1520]/85 border border-[#1e2e40]/50 flex items-center justify-center text-gray-500 hover:text-gray-300 hover:border-[#2e4a60] transition-colors cursor-pointer"
+          onClick={onZoomIn}
+          title="Zoom in"
+        >
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <line x1="3" y1="6.5" x2="10" y2="6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+            <line x1="6.5" y1="3" x2="6.5" y2="10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          </svg>
+        </button>
+        <button
+          className="w-[30px] h-[30px] rounded-md bg-[#0d1520]/85 border border-[#1e2e40]/50 flex items-center justify-center text-gray-500 hover:text-gray-300 hover:border-[#2e4a60] transition-colors cursor-pointer"
+          onClick={onZoomOut}
+          title="Zoom out"
+        >
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <line x1="3" y1="6.5" x2="10" y2="6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          </svg>
+        </button>
+        <button
+          className="w-[30px] h-[30px] rounded-md bg-[#0d1520]/85 border border-[#1e2e40]/50 flex items-center justify-center text-gray-500 hover:text-gray-300 hover:border-[#2e4a60] transition-colors cursor-pointer"
+          onClick={onOpenSettings}
+          title="Settings"
+        >
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <circle cx="6.5" cy="6.5" r="2" stroke="currentColor" strokeWidth="1" />
+            <path d="M6.5 1v1.5M6.5 10.5V12M1 6.5h1.5M10.5 6.5H12" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
+    </>
+  );
+}
