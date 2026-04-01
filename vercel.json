@@ -1,0 +1,47 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/eonet/:path*",
+      "destination": "https://eonet.gsfc.nasa.gov/:path*"
+    },
+    {
+      "source": "/api/celestrak/:path*",
+      "destination": "https://celestrak.org/:path*"
+    },
+    {
+      "source": "/api/cables/:path*",
+      "destination": "https://www.submarinecablemap.com/:path*"
+    },
+    {
+      "source": "/api/ocearch/:path*",
+      "destination": "https://www.ocearch.org/:path*"
+    },
+    {
+      "source": "/api/nasa-fireball/:path*",
+      "destination": "https://ssd-api.jpl.nasa.gov/:path*"
+    },
+    {
+      "source": "/api/noaa-tsunami/:path*",
+      "destination": "https://api.weather.gov/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ]
+}
