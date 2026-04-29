@@ -30,6 +30,9 @@ export default function App() {
     cables: false,
     nightLights: false,
     sharks: false,
+    iss: false,
+    fireball: false,
+    tsunami: false,
   });
 
   // ── Intelligence layer state ──────────────────────────────────────────────
@@ -224,6 +227,7 @@ export default function App() {
             intelPoints={intelPoints}
             onIntelClick={handleIntelClick}
             selectedIntelId={selectedIntel?.id}
+            selectedIntelCountry={selectedIntelCountry}
           />
 
           {/* API Error Notifications */}

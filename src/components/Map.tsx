@@ -10,7 +10,7 @@ import { Tile3DLayer, TileLayer } from '@deck.gl/geo-layers';
 import { Tiles3DLoader } from '@loaders.gl/3d-tiles';
 import { SphereGeometry } from '@luma.gl/engine';
 import * as satellite from 'satellite.js';
-import { IntelPoint, severityColor } from './IntelligenceLayer';
+import { IntelPoint, severityColor, COUNTRY_COORDS } from './IntelligenceLayer';
 
 const EARTH_GEOJSON =
   'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_110m_admin_0_countries.geojson';
@@ -31,13 +31,14 @@ interface MapProps {
   intelPoints?: IntelPoint[];
   onIntelClick?: (p: IntelPoint) => void;
   selectedIntelId?: string;
+  selectedIntelCountry?: string | null;
   onCountryClick?: (country: string, coord: number[]) => void;
 }
 
 export default function DeckGLMap({
   activeLayers, onFeatureClick, selectedFeature, viewState, onViewStateChange,
   onNodeCountChange, onLayerCountsChange, onLayerLoading, onApiError, googleMapsApiKey, timeOffset = 0,
-  intelPoints = [], onIntelClick, selectedIntelId, onCountryClick,
+  intelPoints = [], onIntelClick, selectedIntelId, selectedIntelCountry, onCountryClick,
 }: MapProps) {
 
   // ── State ─────────────────────────────────────────────────────────────────
@@ -146,7 +147,7 @@ export default function DeckGLMap({
           if (d.status !== 'ok') throw new Error(d.data || 'WAQI error');
           setAirQuality(d.data.map((s: any, i: number) => ({
             id: `aqi-${s.uid ?? i}`, location: s.station.name, city: s.station.name,
-            position: [s.lat, s.lon, 0],
+            position: [s.lon, s.lat, 0],
             measurements: [{ parameter: 'aqi', value: s.aqi, unit: 'AQI' }],
             featureType: 'airQuality',
           })));
@@ -437,6 +438,39 @@ export default function DeckGLMap({
     return new Set(intelPoints.map(p => p.country?.toUpperCase()).filter(Boolean));
   }, [intelPoints]);
 
+  const countryAggregates = useMemo(() => {
+    const map = new Map<string, any>();
+    const severityRank: Record<string, number> = { critical: 4, high: 3, medium: 2, opportunity: 1, low: 0 };
+    
+    for (const p of intelPoints) {
+      if (!p.country) continue;
+      const c = p.country.toUpperCase();
+      const existing = map.get(c);
+      
+      const baseCoord = COUNTRY_COORDS[c];
+      const targetPos = baseCoord ? [baseCoord[1], baseCoord[0], 0] : p.position;
+      
+      if (!existing) {
+         map.set(c, {
+           id: `agg-${c}`,
+           country: c,
+           position: targetPos,
+           severity: p.severity,
+           type: p.type,
+           count: 1,
+           featureType: 'intel-aggregate'
+         });
+      } else {
+         existing.count++;
+         if (severityRank[p.severity] > severityRank[existing.severity]) {
+           existing.severity = p.severity;
+           existing.type = p.type;
+         }
+      }
+    }
+    return Array.from(map.values());
+  }, [intelPoints]);
+
   // ── Hover state for country labels ────────────────────────────────────────
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
 
@@ -469,12 +503,13 @@ export default function DeckGLMap({
       getFillColor: (d: any) => {
         const name = (d.properties?.name || d.properties?.NAME || '').toUpperCase();
         const hoverName = (hoveredCountry || '').toUpperCase();
-        if (name === hoverName) return [65, 85, 100];
+        if (name === hoverName || name === selectedIntelCountry) return [65, 85, 100];
         if (countriesWithIntel.has(name)) return [45, 60, 75];
         return [35, 45, 55];
       },
       getLineColor: (d: any) => {
         const name = (d.properties?.name || d.properties?.NAME || '').toUpperCase();
+        if (name === selectedIntelCountry) return [200, 220, 230, 255];
         if (countriesWithIntel.has(name)) return [120, 140, 155, 200];
         return [100, 115, 125];
       },
@@ -493,7 +528,7 @@ export default function DeckGLMap({
         }
         onFeatureClick(info);
       },
-      updateTriggers: { getFillColor: [hoveredCountry, countriesWithIntel], getLineColor: [countriesWithIntel] },
+      updateTriggers: { getFillColor: [hoveredCountry, selectedIntelCountry, countriesWithIntel], getLineColor: [selectedIntelCountry, countriesWithIntel] },
     }),
 
     // Country label on hover
@@ -684,52 +719,68 @@ export default function DeckGLMap({
 
     // ── Intel layers (always on top) ─────────────────────────────────────────
 
-    intelPoints.length > 0 && new ScatterplotLayer({
-      id: 'intel-glow', data: intelPoints,
-      getPosition: (d: IntelPoint) => d.position,
-      getFillColor: (d: IntelPoint) => { const [r, g, b] = severityColor(d.severity); return [r, g, b, 35]; },
+    countryAggregates.length > 0 && new ScatterplotLayer({
+      id: 'intel-glow', data: countryAggregates,
+      getPosition: (d: any) => d.position,
+      getFillColor: (d: any) => { const [r, g, b] = severityColor(d.severity); return [r, g, b, 35]; },
       getRadius: 130000, radiusMinPixels: 18, radiusMaxPixels: 52,
       pickable: false, stroked: false,
       updateTriggers: { getFillColor: intelKey },
     }),
 
-    intelPoints.length > 0 && new ScatterplotLayer({
-      id: 'intel-ring', data: intelPoints,
-      getPosition: (d: IntelPoint) => d.position,
+    countryAggregates.length > 0 && new ScatterplotLayer({
+      id: 'intel-ring', data: countryAggregates,
+      getPosition: (d: any) => d.position,
       getFillColor: [0, 0, 0, 0],
-      getLineColor: (d: IntelPoint) => { const [r, g, b] = severityColor(d.severity); return [r, g, b, 150]; },
+      getLineColor: (d: any) => { const [r, g, b] = severityColor(d.severity); return [r, g, b, 150]; },
       getRadius: 88000, radiusMinPixels: 12, radiusMaxPixels: 32,
       stroked: true, filled: true, lineWidthMinPixels: 1.5,
       pickable: false,
       updateTriggers: { getLineColor: intelKey },
     }),
 
-    intelPoints.length > 0 && new ScatterplotLayer({
-      id: 'intel-core', data: intelPoints,
-      getPosition: (d: IntelPoint) => d.position,
-      getFillColor: (d: IntelPoint) =>
-        d.id === selectedIntelId ? [255, 255, 255, 255] : severityColor(d.severity),
-      getLineColor: (d: IntelPoint) =>
-        d.id === selectedIntelId ? severityColor(d.severity) : [0, 0, 0, 0],
+    countryAggregates.length > 0 && new ScatterplotLayer({
+      id: 'intel-core', data: countryAggregates,
+      getPosition: (d: any) => d.position,
+      getFillColor: (d: any) =>
+        (d.country === hoveredCountry || d.country === selectedIntelCountry) ? [255, 255, 255, 255] : severityColor(d.severity),
+      getLineColor: (d: any) =>
+        (d.country === hoveredCountry || d.country === selectedIntelCountry) ? severityColor(d.severity) : [0, 0, 0, 0],
       getRadius: 45000, radiusMinPixels: 6, radiusMaxPixels: 18,
       stroked: true, filled: true, lineWidthMinPixels: 2,
       pickable: true,
-      onClick: (info: any) => { if (info.object) onIntelClick?.(info.object as IntelPoint); },
+      onClick: (info: any) => { 
+        if (info.object && onCountryClick) {
+          onCountryClick(info.object.country, info.object.position);
+        }
+      },
       updateTriggers: {
-        getFillColor: [selectedIntelId, intelKey],
-        getLineColor: [selectedIntelId, intelKey],
+        getFillColor: [hoveredCountry, selectedIntelCountry, intelKey],
+        getLineColor: [hoveredCountry, selectedIntelCountry, intelKey],
       },
     }),
 
-    intelPoints.length > 0 && new TextLayer({
-      id: 'intel-icons', data: intelPoints,
-      getPosition: (d: IntelPoint) => d.position,
-      getText: (d: IntelPoint) => ({ conflict: '⚔', advisory: '⚠', business: '◆', disease: '⬡', news: '◉' }[d.type] ?? '●'),
+    countryAggregates.length > 0 && new TextLayer({
+      id: 'intel-icons', data: countryAggregates,
+      getPosition: (d: any) => d.position,
+      getText: (d: any) => ({ conflict: '⚔', advisory: '⚠', business: '◆', disease: '⬡', news: '◉' }[d.type as string] ?? '●'),
       getSize: 10,
-      getColor: (d: IntelPoint) => { const [r, g, b] = severityColor(d.severity); return [r, g, b, 220]; },
+      getColor: (d: any) => { const [r, g, b] = severityColor(d.severity); return [r, g, b, 220]; },
       getTextAnchor: 'middle', getAlignmentBaseline: 'center',
       fontFamily: 'sans-serif', pickable: false,
       updateTriggers: { getColor: intelKey },
+    }),
+
+    countryAggregates.length > 0 && new TextLayer({
+      id: 'intel-counts', data: countryAggregates.filter((d: any) => d.count > 1),
+      getPosition: (d: any) => d.position,
+      getText: (d: any) => d.count.toString(),
+      getSize: 10,
+      getColor: [255, 255, 255, 255],
+      getTextAnchor: 'middle', getAlignmentBaseline: 'center',
+      pixelOffset: [12, -12],
+      fontFamily: 'monospace', fontWeight: 600, pickable: false,
+      updateTriggers: { getText: intelKey },
     }),
 
   ].filter(Boolean);
@@ -756,6 +807,7 @@ export default function DeckGLMap({
       case 'advisory': return `⚠ ${object.title}`;
       case 'business': return `◆ ${object.title}`;
       case 'news': return `◉ ${object.source ? `${object.source}: ` : ''}${object.title}`;
+      case 'intel-aggregate': return `${object.count} intel report${object.count > 1 ? 's' : ''} in ${object.country}\nSeverity: ${object.severity.toUpperCase()}`;
       default: return null;
     }
   };
