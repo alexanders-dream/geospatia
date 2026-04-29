@@ -5,10 +5,11 @@ interface TimelineSliderProps {
   onChange: (offset: number) => void;
   lat: number;
   lng: number;
-  alt: number;
+  zoom: number;
+  activeLayers: Record<string, boolean>;
 }
 
-export default function TimelineSlider({ timeOffset, onChange, lat, lng, alt }: TimelineSliderProps) {
+export default function TimelineSlider({ timeOffset, onChange, lat, lng, zoom, activeLayers }: TimelineSliderProps) {
   // Calculate slider percentage (0-100) from timeOffset (-86400 to +86400)
   const sliderPercent = ((timeOffset + 86400) / 172800) * 100;
   
@@ -32,16 +33,16 @@ export default function TimelineSlider({ timeOffset, onChange, lat, lng, alt }: 
       {/* Coordinate chips */}
       <div className="flex items-center mr-4">
         <div className="flex flex-col mr-4">
-          <span className="text-[9px] uppercase tracking-wider text-gray-600">Lat</span>
+          <span className="text-[10px] uppercase tracking-wider text-gray-500">Lat</span>
           <span className="text-sm font-medium text-[#7fd4b0] tabular-nums">{(lat || 0).toFixed(4)}°</span>
         </div>
         <div className="flex flex-col mr-4">
-          <span className="text-[9px] uppercase tracking-wider text-gray-600">Lng</span>
+          <span className="text-[10px] uppercase tracking-wider text-gray-500">Lng</span>
           <span className="text-sm font-medium text-[#7fd4b0] tabular-nums">{(lng || 0).toFixed(4)}°</span>
         </div>
         <div className="flex flex-col mr-4">
-          <span className="text-[9px] uppercase tracking-wider text-gray-600">Alt</span>
-          <span className="text-sm font-medium text-[#7fd4b0] tabular-nums">{alt || 0} km</span>
+          <span className="text-[10px] uppercase tracking-wider text-gray-500">Zoom</span>
+          <span className="text-sm font-medium text-[#7fd4b0] tabular-nums">{zoom?.toFixed(1)}</span>
         </div>
       </div>
 
@@ -49,7 +50,7 @@ export default function TimelineSlider({ timeOffset, onChange, lat, lng, alt }: 
       <div className="w-px h-6 bg-[#1e2e40] mr-4" />
 
       {/* Timeline scrubber */}
-      <div className="flex-1 flex items-center gap-2.5">
+      <div className={`flex-1 flex items-center gap-2.5 transition-opacity duration-300 ${!activeLayers?.satellites ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
         <span className={`text-[10px] whitespace-nowrap ${activeLabel.type === 'before' ? 'text-[#1d9e75]' : 'text-gray-600'}`}>-24H</span>
         <input
           type="range"

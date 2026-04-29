@@ -4,7 +4,7 @@ import {
   Flame, Mountain, Wind, CloudRain, Rocket, Cable,
   Lightbulb, Fish, Crosshair, Star, Waves, ChevronDown,
   Swords, AlertTriangle, TrendingUp, HeartPulse, Newspaper,
-  RefreshCw,
+  RefreshCw, Bird
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -46,7 +46,6 @@ interface SidebarProps {
   activeNodes: number;
   layerCounts?: Record<string, number>;
   loadingStates?: Record<string, boolean>;
-  onOpenSettings: () => void;
   // Intel props
   activeIntelCategories: Record<IntelCategory, boolean>;
   toggleIntelCategory: (cat: IntelCategory) => void;
@@ -60,6 +59,17 @@ interface SidebarProps {
 
 const LAYER_GROUPS: LayerGroup[] = [
   {
+    id: 'disasters',
+    name: 'Natural Disasters',
+    layers: [
+      { id: 'earthquakes', label: 'Seismic Activity', icon: Activity, iconColor: 'text-amber-400', iconBg: 'bg-amber-900/30' },
+      { id: 'wildfires', label: 'Active Wildfires', icon: Flame, iconColor: 'text-red-400', iconBg: 'bg-red-900/30' },
+      { id: 'volcanoes', label: 'Volcano Eruptions', icon: Mountain, iconColor: 'text-gray-400', iconBg: 'bg-gray-800/30' },
+      { id: 'tsunami', label: 'Tsunami Warnings', icon: Waves, iconColor: 'text-cyan-400', iconBg: 'bg-cyan-900/30' },
+      { id: 'weatherRadar', label: 'Weather Radar', icon: CloudRain, iconColor: 'text-sky-400', iconBg: 'bg-sky-900/30' },
+    ],
+  },
+  {
     id: 'space',
     name: 'Space & Astronomy',
     layers: [
@@ -69,17 +79,6 @@ const LAYER_GROUPS: LayerGroup[] = [
       { id: 'aurora', label: 'Aurora Forecast', icon: Globe, iconColor: 'text-purple-400', iconBg: 'bg-purple-900/30' },
       { id: 'launches', label: 'Spacecraft Launches', icon: Rocket, iconColor: 'text-gray-400', iconBg: 'bg-gray-800/30' },
       { id: 'fireball', label: 'Fireball / Meteors', icon: Star, iconColor: 'text-orange-400', iconBg: 'bg-orange-900/30' },
-    ],
-  },
-  {
-    id: 'disasters',
-    name: 'Natural Disasters',
-    layers: [
-      { id: 'earthquakes', label: 'Seismic Activity', icon: Activity, iconColor: 'text-amber-400', iconBg: 'bg-amber-900/30' },
-      { id: 'wildfires', label: 'Active Wildfires', icon: Flame, iconColor: 'text-red-400', iconBg: 'bg-red-900/30' },
-      { id: 'volcanoes', label: 'Volcano Eruptions', icon: Mountain, iconColor: 'text-gray-400', iconBg: 'bg-gray-800/30' },
-      { id: 'tsunami', label: 'Tsunami Warnings', icon: Waves, iconColor: 'text-cyan-400', iconBg: 'bg-cyan-900/30' },
-      { id: 'weatherRadar', label: 'Weather Radar', icon: CloudRain, iconColor: 'text-sky-400', iconBg: 'bg-sky-900/30' },
     ],
   },
   {
@@ -95,7 +94,7 @@ const LAYER_GROUPS: LayerGroup[] = [
     id: 'wildlife',
     name: 'Ocean & Wildlife',
     layers: [
-      { id: 'sharks', label: 'Shark Tracker', icon: Fish, iconColor: 'text-blue-400', iconBg: 'bg-blue-900/30' },
+      { id: 'wildlife', label: 'Wildlife & Flora', icon: Bird, iconColor: 'text-emerald-400', iconBg: 'bg-emerald-900/30' },
     ],
   },
 ];
@@ -184,16 +183,19 @@ function LayerRow({
         <Icon className={cn('w-[11px] h-[11px]', layer.iconColor)} />
       </div>
       <span className={cn('flex-1 text-left text-[12px] truncate',
-        isActive ? 'text-[#d8eaf8]' : 'text-[#9ab0c2]')}>
+        isActive ? 'text-[#e0eef8]' : 'text-[#8aabbf]')}>
         {layer.label}
       </span>
-      {isLoading && (
-        <div className="w-3 h-3 rounded-full border border-white/20 border-t-emerald-400 animate-spin shrink-0" />
-      )}
-      {!isLoading && isActive && count !== undefined && count > 0 && (
-        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#1e2e40] text-gray-400 shrink-0">
-          {count}
+      {isLoading && isActive ? (
+        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#1e2e40] text-[#8aabbf] shrink-0">
+          ...
         </span>
+      ) : (
+        !isLoading && isActive && count !== undefined && count > 0 && (
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#1e2e40] text-[#8aabbf] shrink-0">
+            {count}
+          </span>
+        )
       )}
       <Toggle on={isActive} />
     </button>
@@ -230,20 +232,23 @@ function IntelRow({
         </div>
         <div className="flex-1 min-w-0 text-left">
           <div className={cn('text-[12px] leading-none mb-0.5',
-            isActive ? 'text-[#d8eaf8]' : 'text-[#9ab0c2]')}>
+            isActive ? 'text-[#e0eef8]' : 'text-[#8aabbf]')}>
             {layer.label}
           </div>
-          <div className="text-[9px] text-gray-600 truncate">{layer.desc}</div>
+          <div className="text-[10px] text-[#5b7a90] truncate">{layer.desc}</div>
         </div>
 
         {/* State indicators */}
-        {isLoading && (
-          <div className="w-3 h-3 rounded-full border border-white/20 border-t-emerald-400 animate-spin shrink-0" />
-        )}
-        {!isLoading && isActive && count > 0 && (
-          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#1e2e40] text-gray-400 shrink-0">
-            {count}
+        {isLoading && isActive ? (
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#1e2e40] text-[#8aabbf] shrink-0">
+            ...
           </span>
+        ) : (
+          !isLoading && isActive && count > 0 && (
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#1e2e40] text-[#8aabbf] shrink-0">
+              {count}
+            </span>
+          )
         )}
         {error && !isLoading && (
           <button
@@ -279,11 +284,11 @@ function CollapsibleSection({
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center gap-1.5 px-4 pt-2.5 pb-1.5 hover:bg-white/[0.02] transition-colors group"
       >
-        <span className="text-[9px] uppercase tracking-widest text-gray-600 font-medium flex-1 text-left">
+        <span className="text-[11px] uppercase tracking-widest text-[#8aabbf] font-medium flex-1 text-left">
           {title}
         </span>
         {badge != null && badge > 0 && (
-          <span className="text-[8px] bg-[#1e2e40] text-gray-500 px-1.5 py-0.5 rounded font-mono">
+          <span className="text-[10px] bg-[#1e2e40] text-[#8aabbf] px-1.5 py-0.5 rounded font-mono">
             {badge}
           </span>
         )}
@@ -335,7 +340,7 @@ function SeverityLegend() {
 // ─── Main Sidebar ─────────────────────────────────────────────────────────────
 
 export default function Sidebar({
-  activeLayers, toggleLayer, activeNodes, layerCounts = {}, loadingStates = {}, onOpenSettings,
+  activeLayers, toggleLayer, activeNodes, layerCounts = {}, loadingStates = {},
   activeIntelCategories, toggleIntelCategory, intelLoading, intelErrors,
   intelPointCounts, onRefetchIntel,
 }: SidebarProps) {
@@ -374,26 +379,23 @@ export default function Sidebar({
           </div>
           <div className="flex items-center gap-1.5">
             {activeNodes > 0 && (
-              <span className="text-[9px] font-mono text-[#3d7a6a] bg-[#0a1e18] px-1.5 py-0.5 rounded border border-[#0f3a2a]">
+              <span className="text-[10px] font-mono text-[#3d7a6a] bg-[#0a1e18] px-1.5 py-0.5 rounded border border-[#0f3a2a]">
                 {activeNodes.toLocaleString()}
               </span>
             )}
-            <button onClick={onOpenSettings} className="p-1.5 hover:bg-white/10 rounded transition-colors" title="Settings">
-              <Settings className="w-4 h-4 text-zinc-400 hover:text-white" />
-            </button>
           </div>
         </div>
       </div>
 
       {/* ── Search ─────────────────────────────────────────────────────────── */}
       <div className="mx-3 my-2.5 flex items-center gap-1.5 bg-[#0a1018] border border-[#1e2e40]/50 rounded-md px-2.5 py-1.5">
-        <Search className="w-3 h-3 text-[#3d5568] shrink-0" />
+        <Search className="w-3 h-3 text-[#5b7a90] shrink-0" />
         <input
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          placeholder="Search layers…"
-          className="bg-transparent border-none outline-none text-[#c8d8e8] text-[12px] w-full placeholder:text-[#3d5568] font-sans"
+          placeholder="Filter layers…"
+          className="bg-transparent border-none outline-none text-[#c8d8e8] text-[12px] w-full placeholder:text-[#5b7a90] font-sans"
         />
         {searchQuery && (
           <button onClick={() => setSearchQuery('')} className="text-gray-600 hover:text-gray-400">

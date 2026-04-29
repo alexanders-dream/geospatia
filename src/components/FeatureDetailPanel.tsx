@@ -1,11 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface FeatureDetailPanelProps {
   feature: any | null;
   onClose: () => void;
   onTrack: () => void;
-  onHistory: () => void;
-  onShare: () => void;
 }
 
 // Type configuration for different feature types
@@ -101,22 +99,22 @@ const typeConfigs: Record<string, TypeConfig> = {
       ];
     },
   },
-  shark: {
-    badge: 'Shark',
-    badgeColor: 'bg-blue-900/30 text-blue-400',
+  wildlife: {
+    badge: 'Wildlife',
+    badgeColor: 'bg-emerald-900/30 text-emerald-400',
     getName: (f) => f.name || f.properties?.name || 'Unknown',
     getRows: (f) => {
       const props = f.properties || f;
       return [
-        { key: 'Species', value: props.species || 'N/A' },
-        { key: 'Name', value: props.name || 'N/A', accent: true },
-        { key: 'Length', value: props.length ? `${props.length} ft` : 'N/A' },
-        { key: 'Tag Date', value: props.tagDate || props.tag_date || 'N/A' },
-        { key: 'Last Loc', value: props.lastLocation || props.last_location || 'N/A' },
+        { key: 'Scientific Name', value: props.scientificName || 'N/A' },
+        { key: 'Class', value: props.iconicTaxon || 'N/A', accent: true },
+        { key: 'Observer', value: props.user || 'N/A' },
+        { key: 'Date', value: props.date || 'N/A' },
+        { key: 'Source', value: props.url ? 'iNaturalist' : 'N/A' },
       ];
     },
     getChartData: () => null,
-    getChartLabel: () => 'Depth profile (m)',
+    getChartLabel: () => '',
   },
   airQuality: {
     badge: 'Air Quality',
@@ -359,17 +357,26 @@ export default function FeatureDetailPanel({
   feature,
   onClose,
   onTrack,
-  onHistory,
-  onShare,
 }: FeatureDetailPanelProps) {
+  const [copied, setCopied] = useState(false);
   const config = feature ? getTypeConfig(feature) : null;
   const name = config ? config.getName(feature) : '';
   const rows = config ? config.getRows(feature) : [];
   const chartData = config?.getChartData?.();
   const chartLabel = config?.getChartLabel?.();
 
+  const handleCopyCoords = () => {
+    if (!feature) return;
+    const pos = feature.position || feature.properties?.position || feature.geometry?.coordinates;
+    if (pos && pos.length >= 2) {
+      navigator.clipboard.writeText(`${pos[1].toFixed(4)}, ${pos[0].toFixed(4)}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
-    <div className="w-[220px] min-w-[220px] bg-[#0d1520] border-l border-[#1e2e40]/50 flex flex-col h-full">
+    <div className="w-[260px] min-w-[260px] bg-[#0d1520] border-l border-[#1e2e40]/50 flex flex-col h-full">
       {/* Header */}
       <div className="px-3.5 py-3 border-b border-[#1e2e40]/50 flex items-center justify-between">
         <span className="text-[10px] uppercase tracking-wider text-gray-600 font-medium">
@@ -403,24 +410,37 @@ export default function FeatureDetailPanel({
               {name}
             </div>
 
+            {/* Wildlife Photo */}
+            {(feature.photoUrl || feature.properties?.photoUrl) && (
+              <div className="mb-4 -mt-2">
+                <a href={feature.url || feature.properties?.url || '#'} target="_blank" rel="noreferrer">
+                  <img 
+                    src={feature.photoUrl || feature.properties?.photoUrl} 
+                    alt={name}
+                    className="w-full h-40 object-cover rounded border border-[#1e2e40] shadow-sm hover:opacity-90 transition-opacity"
+                  />
+                </a>
+              </div>
+            )}
+
             {/* Key/value rows */}
             <div className="space-y-0">
               {rows.map((row, idx) => (
                 <div key={idx} className="flex justify-between items-center mb-2.5">
-                  <span className="text-[11px] text-[#3d5568]">{row.key}</span>
+                  <span className="text-[11px] text-[#8aabbf]">{row.key}</span>
                   {row.value.startsWith('http://') || row.value.startsWith('https://') ? (
                     <a
                       href={row.value}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs tabular-nums text-pink-400 hover:text-pink-300 truncate max-w-[120px] underline"
+                      className="text-xs tabular-nums text-[#3b82f6] hover:text-[#60a5fa] truncate max-w-[120px] underline"
                     >
                       {row.value.length > 30 ? row.value.substring(0, 30) + '...' : row.value}
                     </a>
                   ) : (
                     <span
                       className={`text-xs tabular-nums ${
-                        row.accent ? 'text-[#7fd4b0]' : 'text-[#9ab0c2]'
+                        row.accent ? 'text-[#e0eef8]' : 'text-[#c8d8e8]'
                       }`}
                     >
                       {row.value}
@@ -441,7 +461,7 @@ export default function FeatureDetailPanel({
             <div className="w-10 h-10 rounded-full border border-dashed border-[#1e2e40] flex items-center justify-center mb-3">
               <div className="w-1.5 h-1.5 rounded-full bg-[#3d5568] animate-ping" />
             </div>
-            <p className="text-[10px] text-[#3d5568] font-mono tracking-wider uppercase leading-relaxed">
+            <p className="text-[11px] text-[#8aabbf] font-mono tracking-wider uppercase leading-relaxed">
               Select an object on the map<br />
               to view details
             </p>
@@ -455,19 +475,13 @@ export default function FeatureDetailPanel({
           onClick={onTrack}
           className="flex-1 py-1.5 rounded-md border border-[#0f6e56] bg-transparent text-teal-400 text-[11px] cursor-pointer hover:bg-teal-900/30 transition-colors font-medium"
         >
-          Track
+          Fly To
         </button>
         <button
-          onClick={onHistory}
+          onClick={handleCopyCoords}
           className="flex-1 py-1.5 rounded-md border border-[#1e3a50] bg-transparent text-gray-400 text-[11px] cursor-pointer hover:bg-[#111e2a] transition-colors"
         >
-          History
-        </button>
-        <button
-          onClick={onShare}
-          className="flex-1 py-1.5 rounded-md border border-[#1e3a50] bg-transparent text-gray-400 text-[11px] cursor-pointer hover:bg-[#111e2a] transition-colors"
-        >
-          Share
+          {copied ? 'Copied!' : 'Copy Coords'}
         </button>
       </div>
     </div>

@@ -294,7 +294,7 @@ export function useCables(active: boolean) {
   return { data, loading };
 }
 
-export function useSharks(active: boolean) {
+export function useWildlife(active: boolean) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -302,23 +302,27 @@ export function useSharks(active: boolean) {
     const ctrl = new AbortController();
     if (active && !data.length) {
       setLoading(true);
-      fetch('/api/ocearch/tracker/ajax/filter-sharks', { signal: ctrl.signal })
-        .then(r => {
-          if (!r.headers.get('content-type')?.includes('application/json')) throw new Error('non-JSON');
-          return r.json();
+      fetch('https://api.inaturalist.org/v1/observations?iconic_taxa=Mammalia,Aves,Reptilia,Amphibia,Actinopterygii,Insecta,Plantae&quality_grade=research&per_page=200&has[]=photos', { signal: ctrl.signal })
+        .then(r => r.json())
+        .then(d => {
+          setData(d.results.map((obs: any) => ({
+            id: `wildlife-${obs.id}`,
+            name: obs.taxon?.preferred_common_name || obs.taxon?.name || 'Unknown Species',
+            scientificName: obs.taxon?.name,
+            iconicTaxon: obs.taxon?.iconic_taxon_name,
+            position: [
+              parseFloat(obs.geojson.coordinates[0]), 
+              parseFloat(obs.geojson.coordinates[1]), 
+              0
+            ],
+            photoUrl: obs.photos?.[0]?.url?.replace('square', 'medium'),
+            user: obs.user?.login,
+            date: obs.observed_on_details?.date,
+            url: obs.uri,
+            featureType: 'wildlife',
+          })).filter((w: any) => !isNaN(w.position[0]) && !isNaN(w.position[1])));
         })
-        .then(d => setData(d.map((s: any) => ({
-          id: `shark-${s.id}`, name: s.name, species: s.species,
-          position: [parseFloat(s.longitude), parseFloat(s.latitude), 0],
-          weight: s.weight, length: s.length, featureType: 'shark',
-        })).filter((s: any) => !isNaN(s.position[0]) && !isNaN(s.position[1]))))
-        .catch(() =>
-          import('../data/mockSharks').then(m => setData(m.mockSharkData.map((s: any) => ({
-            id: `shark-${s.id}`, name: s.name, species: s.species,
-            position: [parseFloat(s.longitude), parseFloat(s.latitude), 0],
-            weight: s.weight, length: s.length, featureType: 'shark',
-          }))))
-        )
+        .catch(e => { if (e.name !== 'AbortError') console.error(e); })
         .finally(() => setLoading(false));
     } else if (!active) setData([]);
     return () => ctrl.abort();

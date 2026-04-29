@@ -172,33 +172,22 @@ function jitter(n: number, amount = 1.5): number {
 // ─── Data fetchers ────────────────────────────────────────────────────────────
 
 async function fetchWithProxy(url: string, asXml = false): Promise<any> {
-  const proxies = [
-    (u: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
-    (u: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`
-  ];
-  for (const proxy of proxies) {
-    try {
-      const pUrl = proxy(url);
-      const res = await fetch(pUrl, { signal: AbortSignal.timeout(8000) });
-      if (!res.ok) continue;
-      if (pUrl.includes('allorigins')) {
-        const json = await res.json();
-        if (asXml) return json.contents;
-        return JSON.parse(json.contents);
-      } else {
-        if (asXml) return await res.text();
-        return await res.json();
-      }
-    } catch { }
+  try {
+    const pUrl = `/api/proxy?url=${encodeURIComponent(url)}&asXml=${asXml}`;
+    const res = await fetch(pUrl, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) throw new Error('Proxy failed');
+    if (asXml) return await res.text();
+    return await res.json();
+  } catch (err) {
+    throw new Error('Proxy fetch failed for ' + url);
   }
-  throw new Error('All proxies failed for ' + url);
 }
 
 async function fetchACLEDConflicts(): Promise<IntelPoint[]> {
   try {
-    const since = new Date(Date.now() - 30 * 864e5).toISOString().split('T')[0];
-    const url = `https://api.acleddata.com/acled/read.csv?limit=100&event_date=${since}&event_date_where=>=&fields=event_id_cnty|event_date|event_type|country|latitude|longitude|notes|fatalities|actor1|actor2&key=DEMO&email=demo@acleddata.com`;
-    const text = await fetchWithProxy(url, true);
+    const res = await fetch('/api/acled', { signal: AbortSignal.timeout(15000) });
+    if (!res.ok) throw new Error('ACLED failed');
+    const text = await res.text();
     
     if (!text || text.startsWith('<') || text.startsWith('{')) throw new Error('non-CSV');
     const [header, ...rows] = text.trim().split('\n');

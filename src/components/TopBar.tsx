@@ -5,11 +5,11 @@ interface TopBarProps {
   onResetView: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
-  onOpenSettings: () => void;
   apiErrors?: Record<string, string>;
+  zoom?: number;
 }
 
-export default function TopBar({ onResetView, onZoomIn, onZoomOut, onOpenSettings, apiErrors = {} }: TopBarProps) {
+export default function TopBar({ onResetView, onZoomIn, onZoomOut, apiErrors = {}, zoom = 0 }: TopBarProps) {
   const [utcTime, setUtcTime] = useState('');
 
   useEffect(() => {
@@ -51,7 +51,10 @@ export default function TopBar({ onResetView, onZoomIn, onZoomOut, onOpenSetting
       </div>
 
       {/* Top-right tool buttons */}
-      <div className="absolute top-3 right-3 z-10 flex gap-1.5">
+      <div className="absolute top-6 right-6 flex items-center gap-1.5 z-10 pointer-events-auto">
+        <div className="bg-[#111e2a] border border-[#1e2e40] text-[#9ab0c2] text-[10px] font-mono px-2 py-1.5 rounded-md mr-1">
+          {zoom.toFixed(1)}Z
+        </div>
         <button
           className="w-[30px] h-[30px] rounded-md bg-[#0d1520]/85 border border-[#1e2e40]/50 flex items-center justify-center text-gray-500 hover:text-gray-300 hover:border-[#2e4a60] transition-colors cursor-pointer"
           onClick={onResetView}
@@ -80,16 +83,6 @@ export default function TopBar({ onResetView, onZoomIn, onZoomOut, onOpenSetting
         >
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
             <line x1="3" y1="6.5" x2="10" y2="6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-          </svg>
-        </button>
-        <button
-          className="w-[30px] h-[30px] rounded-md bg-[#0d1520]/85 border border-[#1e2e40]/50 flex items-center justify-center text-gray-500 hover:text-gray-300 hover:border-[#2e4a60] transition-colors cursor-pointer"
-          onClick={onOpenSettings}
-          title="Settings"
-        >
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-            <circle cx="6.5" cy="6.5" r="2" stroke="currentColor" strokeWidth="1" />
-            <path d="M6.5 1v1.5M6.5 10.5V12M1 6.5h1.5M10.5 6.5H12" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
           </svg>
         </button>
       </div>

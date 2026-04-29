@@ -10,11 +10,11 @@ import { Tile3DLayer, TileLayer } from '@deck.gl/geo-layers';
 import { Tiles3DLoader } from '@loaders.gl/3d-tiles';
 import { SphereGeometry } from '@luma.gl/engine';
 import * as satellite from 'satellite.js';
-import { IntelPoint, severityColor, COUNTRY_COORDS } from './IntelligenceLayer';
+import { IntelPoint, severityColor, COUNTRY_COORDS, ISO3_COORDS } from './IntelligenceLayer';
 import {
   useEarthquakes, useEonetEvents, useAirQuality, useWeatherRadar,
   useNeos, useAurora, useLaunches, useIss, useFireballs, useTsunami,
-  useCables, useSharks
+  useCables, useWildlife
 } from '../hooks/useMapLayerData';
 import { useSatellites } from '../hooks/useSatellites';
 const EARTH_GEOJSON =
@@ -31,7 +31,6 @@ interface MapProps {
   onLayerCountsChange?: (counts: Record<string, number>) => void;
   onLayerLoading?: (s: Record<string, boolean>) => void;
   onApiError?: (layer: string, err: string | null) => void;
-  googleMapsApiKey?: string;
   timeOffset?: number;
   intelPoints?: IntelPoint[];
   onIntelClick?: (p: IntelPoint) => void;
@@ -42,7 +41,7 @@ interface MapProps {
 
 export default function DeckGLMap({
   activeLayers, onFeatureClick, selectedFeature, viewState, onViewStateChange,
-  onNodeCountChange, onLayerCountsChange, onLayerLoading, onApiError, googleMapsApiKey, timeOffset = 0,
+  onNodeCountChange, onLayerCountsChange, onLayerLoading, onApiError, timeOffset = 0,
   intelPoints = [], onIntelClick, selectedIntelId, selectedIntelCountry, onCountryClick,
 }: MapProps) {
 
@@ -57,21 +56,11 @@ export default function DeckGLMap({
         const labels = (data.features ?? []).map((f: any) => {
           const iso = f.properties.iso_a3;
           const name = f.properties.name || f.properties.sovereignt || f.properties.NAME || '';
-          
-          let pos: [number, number] | undefined = undefined;
-          if (iso && import('./IntelligenceLayer').then(m => pos = m.ISO3_COORDS[iso])) {}
-          // For synchronous evaluation, we just duplicate the imports or parse them:
-          return { f, iso, name };
-        });
-        
-        import('./IntelligenceLayer').then(m => {
-           const processed = labels.map(({ f, iso, name }) => {
-              const pos = m.ISO3_COORDS[iso] || m.COUNTRY_COORDS[name.toUpperCase()];
-              if (!pos) return null;
-              return { position: [pos[1], pos[0], 0], name };
-           }).filter(Boolean);
-           setCountryLabels(processed);
-        });
+          const pos = ISO3_COORDS[iso] || COUNTRY_COORDS[name.toUpperCase()];
+          if (!pos) return null;
+          return { position: [pos[1], pos[0], 0], name };
+        }).filter(Boolean);
+        setCountryLabels(labels);
       })
       .catch(() => { });
   }, []);
@@ -87,7 +76,7 @@ export default function DeckGLMap({
   const { data: fireballData, loading: fbLoading } = useFireballs(activeLayers.fireball);
   const { data: tsunamiData, loading: tsLoading } = useTsunami(activeLayers.tsunami);
   const { data: cables, loading: cbLoading } = useCables(activeLayers.cables);
-  const { data: sharks, loading: shLoading } = useSharks(activeLayers.sharks);
+  const { data: wildlife, loading: wlLoading } = useWildlife(activeLayers.wildlife);
   const { satellitePositions, loading: satLoading } = useSatellites(activeLayers.satellites, timeOffset);
 
   useEffect(() => {
@@ -104,14 +93,14 @@ export default function DeckGLMap({
         fireball: fbLoading,
         tsunami: tsLoading,
         cables: cbLoading,
-        sharks: shLoading,
+        wildlife: wlLoading,
         satellites: satLoading,
       });
     }
   }, [
     onLayerLoading, eqLoading, wfLoading, voLoading, aqLoading, wrLoading,
     neoLoading, auLoading, lnLoading, fbLoading, tsLoading, cbLoading,
-    shLoading, satLoading
+    wlLoading, satLoading
   ]);
 
   // ── Node count ────────────────────────────────────────────────────────────
@@ -126,7 +115,7 @@ export default function DeckGLMap({
       aurora: aurora.length,
       launches: launches.length,
       cables: cables.length,
-      sharks: sharks.length,
+      wildlife: wildlife.length,
       iss: issData ? 1 : 0,
       fireball: fireballData.length,
       tsunami: tsunamiData.length,
@@ -145,7 +134,7 @@ export default function DeckGLMap({
   }, [
     activeLayers, earthquakes.length, satellitePositions.length, wildfires.length,
     volcanoes.length, airQuality.length, neos.length, aurora.length, launches.length,
-    cables.length, sharks.length, fireballData.length, tsunamiData.length,
+    cables.length, wildlife.length, fireballData.length, tsunamiData.length,
     issData, weatherRadarUrl, intelPoints.length, onNodeCountChange, onLayerCountsChange
   ]);
 
@@ -159,7 +148,7 @@ export default function DeckGLMap({
     return [pts];
   }, [activeLayers.satellites, satellitePositions.length]);
 
-  const intelKey = intelPoints.map(p => `${p.id}${p.severity}`).join(',');
+  const intelKey = `${intelPoints.length}`;
 
   const countriesWithIntel = useMemo(() => {
     return new Set(intelPoints.map(p => p.country?.toUpperCase()).filter(Boolean));
@@ -204,9 +193,6 @@ export default function DeckGLMap({
   // ── Layers ────────────────────────────────────────────────────────────────
   const layers = [
     // Base
-    googleMapsApiKey
-      ? new Tile3DLayer({ id: 'google-3d', data: `https://tile.googleapis.com/v1/3dtiles/root.json?key=${googleMapsApiKey}`, loader: Tiles3DLoader })
-      : null,
 
     activeLayers.nightLights ? new TileLayer({
       id: 'night-lights',
@@ -219,13 +205,13 @@ export default function DeckGLMap({
       },
     }) : null,
 
-    !googleMapsApiKey && !activeLayers.nightLights && new SimpleMeshLayer({
+    !activeLayers.nightLights && new SimpleMeshLayer({
       id: 'earth-sphere', data: [0], mesh: earthSphere,
       coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
       getPosition: () => [0, 0, 0], getColor: () => [10, 15, 25],
     }),
 
-    !googleMapsApiKey && !activeLayers.nightLights && new GeoJsonLayer({
+    !activeLayers.nightLights && new GeoJsonLayer({
       id: 'earth-land', data: EARTH_GEOJSON, stroked: true, filled: true,
       getFillColor: (d: any) => {
         const name = (d.properties?.name || d.properties?.NAME || '').toUpperCase();
@@ -358,11 +344,7 @@ export default function DeckGLMap({
       pickable: true, onClick: onFeatureClick,
     }),
 
-    // Sharks
-    activeLayers.sharks && new ScatterplotLayer({
-      id: 'sharks', data: sharks, getPosition: (d: any) => d.position,
-      getFillColor: [59, 130, 246, 255], getRadius: 15000, pickable: true, onClick: onFeatureClick,
-    }),
+    // (Wildlife layer is rendered further down)
 
     // NEOs
     activeLayers.neos && new ScatterplotLayer({
@@ -444,6 +426,22 @@ export default function DeckGLMap({
       pickable: true, onClick: onFeatureClick,
     }),
 
+    activeLayers.wildlife && new ScatterplotLayer({
+      id: 'wildlife-layer',
+      data: wildlife,
+      getPosition: (d: any) => d.position,
+      getFillColor: [74, 222, 128, 220],
+      getLineColor: [255, 255, 255, 200],
+      getRadius: 15000,
+      radiusMinPixels: 4,
+      radiusMaxPixels: 10,
+      stroked: true,
+      filled: true,
+      lineWidthMinPixels: 1,
+      pickable: true,
+      onClick: onFeatureClick,
+    }),
+
     // ── Intel layers (always on top) ─────────────────────────────────────────
 
     countryAggregates.length > 0 && new ScatterplotLayer({
@@ -513,7 +511,9 @@ export default function DeckGLMap({
   ].filter(Boolean);
 
   // ── Tooltip ───────────────────────────────────────────────────────────────
-  const getTooltip = ({ object }: any) => {
+  const [hoverInfo, setHoverInfo] = useState<any>(null);
+
+  const getTooltipContent = (object: any) => {
     if (!object) return null;
     const t = object.featureType ?? object.properties?.featureType ?? object.type;
     switch (t) {
@@ -525,7 +525,7 @@ export default function DeckGLMap({
       case 'aurora': return `Aurora: ${object.intensity}%`;
       case 'launch': return `🚀 ${object.name}\n${object.provider}`;
       case 'cable': return `🔌 ${object.properties?.name}`;
-      case 'shark': return `🦈 ${object.name} (${object.species})`;
+      case 'wildlife': return `🌿 ${object.name}${object.scientificName ? `\n(${object.scientificName})` : ''}\nObserver: ${object.user || 'Unknown'}`;
       case 'satellite': return `🛰 ${object.name}`;
       case 'iss': return `ISS — Alt: ${object.altitude?.toFixed(1)} km`;
       case 'fireball': return `💥 Fireball — ${object.energy} kt TNT\n${object.date}`;
@@ -547,10 +547,22 @@ export default function DeckGLMap({
         viewState={viewState}
         onViewStateChange={e => onViewStateChange(e.viewState)}
         controller={true}
-        getTooltip={getTooltip}
+        onHover={setHoverInfo}
         getCursor={({ isDragging }) => isDragging ? 'grabbing' : 'crosshair'}
         style={{ width: '100%', height: '100%', position: 'absolute' }}
       />
+
+      {/* Custom Tooltip Overlay */}
+      {hoverInfo && hoverInfo.object && (
+        <div
+          className="absolute pointer-events-none z-50 bg-[#0a1018]/95 border border-[#1e2e40] rounded shadow-xl backdrop-blur-sm px-3 py-2"
+          style={{ left: hoverInfo.x + 15, top: hoverInfo.y + 15 }}
+        >
+          <div className="text-[11px] text-[#e0eef8] whitespace-pre-wrap font-sans leading-relaxed">
+            {getTooltipContent(hoverInfo.object)}
+          </div>
+        </div>
+      )}
 
       {/* Atmospheric SVG overlay */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 10 }}

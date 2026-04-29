@@ -88,7 +88,6 @@ function MetaRow({ label, value, accent }: { label: string; value: string; accen
 
 export default function IntelligenceDetailPanel({ point, countryPoints, countryName, onClose, onFlyTo, onSelectPoint, onBackToList }: Props) {
   const [copied, setCopied] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (point) {
     const [r, g, b] = severityColor(point.severity);
@@ -111,7 +110,7 @@ export default function IntelligenceDetailPanel({ point, countryPoints, countryN
     };
 
     return (
-      <div className="w-[230px] min-w-[230px] bg-[#0a1018] border-l border-[#1e2e40]/60 flex flex-col h-full z-50 shadow-2xl shadow-black/50">
+      <div className="w-[260px] min-w-[260px] bg-[#0a1018] border-l border-[#1e2e40]/60 flex flex-col h-full z-50 shadow-2xl shadow-black/50">
         {/* Severity stripe */}
         <div className="h-[3px] w-full shrink-0" style={{ background: `rgb(${r},${g},${b})` }} />
 
@@ -162,7 +161,7 @@ export default function IntelligenceDetailPanel({ point, countryPoints, countryN
         </div>
 
         {/* Description */}
-        <p className="text-[11px] text-[#8aabbf] leading-relaxed mb-3">{point.description}</p>
+        <p className="text-[12px] text-[#8aabbf] leading-relaxed mb-3">{point.description}</p>
 
         {/* Divider */}
         <div className="h-px bg-[#1e2e40]/60 mb-3" />
@@ -270,52 +269,35 @@ export default function IntelligenceDetailPanel({ point, countryPoints, countryN
              const typeMeta = TYPE_META[p.type] ?? { label: 'Intel', icon: '●' };
              const severityClass = SEVERITY_CLASSES[p.severity] ?? SEVERITY_CLASSES.low;
              const [r, g, b] = severityColor(p.severity);
-             const isExpanded = expandedId === p.id;
              
              return (
                <div key={p.id} className="flex flex-col text-left rounded bg-[#0d1520] border border-[#1e2e40]/40 transition-colors w-full relative overflow-hidden">
                  <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: `rgb(${r},${g},${b})` }} />
                  
-                 <div className="p-2.5 pl-4 flex flex-col cursor-pointer hover:bg-[#111e2a]" onClick={() => setExpandedId(isExpanded ? null : p.id)}>
+                 <div className="p-2.5 pl-4 flex flex-col cursor-pointer hover:bg-[#111e2a]" onClick={() => onSelectPoint?.(p)}>
                    <div className="flex justify-between items-start mb-1.5">
                      <div className="flex items-center gap-1.5 opacity-80">
                        <span className="text-[12px]">{typeMeta.icon}</span>
-                       <span className="text-[9px] uppercase tracking-wider text-gray-400 font-mono">{typeMeta.label}</span>
+                       <span className="text-[10px] uppercase tracking-wider text-[#8aabbf] font-mono">{typeMeta.label}</span>
                      </div>
-                     <span className={`text-[8px] font-mono px-1 py-0.5 rounded border ${severityClass}`}>
+                     <span className={`text-[9px] font-mono px-1 py-0.5 rounded border ${severityClass}`}>
                        {SEVERITY_LABELS[p.severity]}
                      </span>
                    </div>
                    <h3 className="text-[12px] font-medium text-[#e0eef8] leading-snug line-clamp-2 mb-2">{p.title}</h3>
                    
                    <div className="flex justify-between items-center w-full">
-                     <span className="text-[9px] text-[#3d7a6a] font-mono truncate pr-2 max-w-[70%]">{p.source || p.date}</span>
+                     <span className="text-[10px] text-[#3d7a6a] font-mono truncate pr-2 max-w-[70%]">{p.source || p.date}</span>
                      <div className="flex items-center gap-2">
-                       {p.meta?.fatalities ? <span className="text-[9px] text-red-400 font-mono shrink-0">{p.meta.fatalities} †</span> : null}
-                       <svg className={`w-3 h-3 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                       {p.meta?.fatalities ? <span className="text-[10px] text-red-400 font-mono shrink-0">{p.meta.fatalities} †</span> : null}
+                       <svg className="w-3 h-3 text-[#5b7a90]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                        </svg>
                      </div>
                    </div>
                  </div>
-
-                 {isExpanded && p.description && (
-                   <div className="px-4 pb-3 pt-1 border-t border-[#1e2e40]/40 bg-[#0a1018]">
-                     <p className="text-[11px] text-[#8aabbf] leading-relaxed mb-3 mt-2">{p.description}</p>
-                     <div className="flex justify-between mt-2">
-                       <button onClick={() => onSelectPoint?.(p)} className="text-[10px] text-blue-400 hover:text-blue-300 font-medium">
-                         Fly To & View Full Details
-                       </button>
-                       {p.url && (
-                         <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-emerald-400 hover:text-emerald-300 font-medium">
-                           Read Source ↗
-                         </a>
-                       )}
-                     </div>
-                   </div>
-                 )}
                </div>
-             );
+              );
            })}
         </div>
       </div>

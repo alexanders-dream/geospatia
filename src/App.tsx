@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DeckGLMap from './components/Map';
 import Sidebar from './components/Sidebar';
-import SettingsModal from './components/SettingsModal';
 import TimelineSlider from './components/TimelineSlider';
 import TopBar from './components/TopBar';
 import FeatureDetailPanel from './components/FeatureDetailPanel';
@@ -9,6 +8,7 @@ import IntelligenceDetailPanel from './components/IntelligenceDetailPanel';
 import { FlyToInterpolator } from '@deck.gl/core';
 import { useIntelligenceData, IntelPoint, IntelCategory } from './components/IntelligenceLayer';
 import { Analytics } from "@vercel/analytics/react"
+import { Globe } from 'lucide-react';
 
 const INITIAL_VIEW_STATE = {
   longitude: 10,
@@ -17,6 +17,8 @@ const INITIAL_VIEW_STATE = {
 };
 
 export default function App() {
+  const [showWelcome, setShowWelcome] = useState(true);
+
   const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({
     earthquakes: false,
     satellites: false,
@@ -41,7 +43,7 @@ export default function App() {
     advisory: false,
     business: false,
     disease: false,
-    news: false,
+    news: true,
   });
   const { data: intelPoints, loading: intelLoading, errors: intelErrors, refetch: refetchIntel } = useIntelligenceData(activeIntelCategories);
   const [selectedIntel, setSelectedIntel] = useState<IntelPoint | null>(null);
@@ -68,8 +70,6 @@ export default function App() {
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
   const [activeNodes, setActiveNodes] = useState(0);
   const [layerCounts, setLayerCounts] = useState<Record<string, number>>({});
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
   const [timeOffset, setTimeOffset] = useState(0);
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
   const [apiErrors, setApiErrors] = useState<Record<string, string>>({});
@@ -94,9 +94,6 @@ export default function App() {
   };
 
   useEffect(() => {
-    const key = localStorage.getItem('googleMapsApiKey');
-    if (key) setGoogleMapsApiKey(key);
-
     const params = new URLSearchParams(window.location.search);
     const lat = params.get('lat');
     const lng = params.get('lng');
@@ -192,7 +189,6 @@ export default function App() {
         activeNodes={activeNodes}
         layerCounts={layerCounts}
         loadingStates={loadingStates}
-        onOpenSettings={() => setIsSettingsOpen(true)}
         activeIntelCategories={activeIntelCategories}
         toggleIntelCategory={toggleIntelCategory}
         intelLoading={intelLoading}
@@ -207,8 +203,8 @@ export default function App() {
             onResetView={handleResetView}
             onZoomIn={handleZoomIn}
             onZoomOut={handleZoomOut}
-            onOpenSettings={() => setIsSettingsOpen(true)}
             apiErrors={apiErrors}
+            zoom={viewState.zoom}
           />
 
           <DeckGLMap
@@ -222,7 +218,6 @@ export default function App() {
             onLayerCountsChange={setLayerCounts}
             onLayerLoading={setLoadingStates}
             onApiError={handleApiError}
-            googleMapsApiKey={googleMapsApiKey}
             timeOffset={timeOffset}
             // ── New intel props ──
             intelPoints={intelPoints}
@@ -239,7 +234,8 @@ export default function App() {
           onChange={setTimeOffset}
           lat={viewState.latitude}
           lng={viewState.longitude}
-          alt={Math.round(6378137 * Math.pow(2, -viewState.zoom) / 1000)}
+          zoom={viewState.zoom}
+          activeLayers={activeLayers}
         />
       </div>
 
@@ -250,14 +246,8 @@ export default function App() {
           onClose={() => setSelectedFeature(null)}
           onTrack={() => {
             const pos = selectedFeature.position || selectedFeature.geometry?.coordinates;
-            if (pos?.length >= 2) flyTo(pos[0], pos[1], 8);
-          }}
-          onHistory={() => setTimeOffset(-3600 * 6)}
-          onShare={() => {
-            const pos = selectedFeature.position || selectedFeature.geometry?.coordinates;
-            if (pos?.length >= 2) {
-              const url = `${window.location.origin}${window.location.pathname}?lat=${pos[1]}&lng=${pos[0]}&zoom=8`;
-              navigator.clipboard?.writeText(url).catch(() => { });
+            if (pos) {
+              flyTo(pos[0], pos[1], 5);
             }
           }}
         />
@@ -276,11 +266,61 @@ export default function App() {
         />
       )}
 
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        onSave={(key) => setGoogleMapsApiKey(key)}
-      />
+      {/* Welcome / Onboarding Panel */}
+      {showWelcome && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-auto">
+          <div className="bg-[#0d1520] border border-[#1e2e40] rounded-lg shadow-2xl w-[480px] max-w-[90vw] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
+            <div className="p-6">
+              <h2 className="text-2xl font-semibold text-white mb-2 flex items-center gap-2">
+                <Globe className="w-6 h-6 text-[#1d9e75]" />
+                Welcome to GeoSpatia
+              </h2>
+              <p className="text-[#8aabbf] text-sm mb-6 leading-relaxed">
+                A live, 3D interactive intelligence dashboard connecting planetary data with global events.
+              </p>
+
+              <div className="space-y-4 mb-8">
+                <div className="flex gap-3 items-start">
+                  <div className="w-8 h-8 rounded bg-[#111e2a] flex items-center justify-center shrink-0 border border-[#1e2e40]">
+                    <span className="text-[#3b82f6] font-bold">1</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white text-sm font-medium mb-1">Toggle Data Layers</h3>
+                    <p className="text-xs text-[#8aabbf] leading-relaxed">Use the left sidebar to activate physical layers like satellites, weather radar, natural disasters, or the global wildlife feed.</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 items-start">
+                  <div className="w-8 h-8 rounded bg-[#111e2a] flex items-center justify-center shrink-0 border border-[#1e2e40]">
+                    <span className="text-[#3b82f6] font-bold">2</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white text-sm font-medium mb-1">Explore Intelligence</h3>
+                    <p className="text-xs text-[#8aabbf] leading-relaxed">Turn on intelligence categories (like Global News) at the bottom of the sidebar. Click the glowing nodes on the globe to read regional reports.</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 items-start">
+                  <div className="w-8 h-8 rounded bg-[#111e2a] flex items-center justify-center shrink-0 border border-[#1e2e40]">
+                    <span className="text-[#3b82f6] font-bold">3</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white text-sm font-medium mb-1">Navigate Time</h3>
+                    <p className="text-xs text-[#8aabbf] leading-relaxed">Use the timeline slider at the bottom of the screen to scrub satellite orbits backward and forward in time.</p>
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setShowWelcome(false)}
+                className="w-full py-2.5 bg-[#1d9e75] hover:bg-[#157a5a] text-white rounded font-medium text-sm transition-colors"
+              >
+                Start Exploring
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
