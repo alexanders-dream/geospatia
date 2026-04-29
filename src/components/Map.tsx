@@ -31,12 +31,13 @@ interface MapProps {
   intelPoints?: IntelPoint[];
   onIntelClick?: (p: IntelPoint) => void;
   selectedIntelId?: string;
+  onCountryClick?: (country: string, coord: number[]) => void;
 }
 
 export default function DeckGLMap({
   activeLayers, onFeatureClick, selectedFeature, viewState, onViewStateChange,
   onNodeCountChange, onLayerCountsChange, onLayerLoading, onApiError, googleMapsApiKey, timeOffset = 0,
-  intelPoints = [], onIntelClick, selectedIntelId,
+  intelPoints = [], onIntelClick, selectedIntelId, onCountryClick,
 }: MapProps) {
 
   // ── State ─────────────────────────────────────────────────────────────────
@@ -432,6 +433,10 @@ export default function DeckGLMap({
 
   const intelKey = intelPoints.map(p => `${p.id}${p.severity}`).join(',');
 
+  const countriesWithIntel = useMemo(() => {
+    return new Set(intelPoints.map(p => p.country?.toUpperCase()).filter(Boolean));
+  }, [intelPoints]);
+
   // ── Hover state for country labels ────────────────────────────────────────
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
 
@@ -461,14 +466,34 @@ export default function DeckGLMap({
 
     !googleMapsApiKey && !activeLayers.nightLights && new GeoJsonLayer({
       id: 'earth-land', data: EARTH_GEOJSON, stroked: true, filled: true,
-      getFillColor: (d: any) =>
-        (d.properties?.name || d.properties?.NAME) === hoveredCountry ? [55, 75, 90] : [35, 45, 55],
-      getLineColor: [100, 115, 125], lineWidthMinPixels: 1,
+      getFillColor: (d: any) => {
+        const name = (d.properties?.name || d.properties?.NAME || '').toUpperCase();
+        const hoverName = (hoveredCountry || '').toUpperCase();
+        if (name === hoverName) return [65, 85, 100];
+        if (countriesWithIntel.has(name)) return [45, 60, 75];
+        return [35, 45, 55];
+      },
+      getLineColor: (d: any) => {
+        const name = (d.properties?.name || d.properties?.NAME || '').toUpperCase();
+        if (countriesWithIntel.has(name)) return [120, 140, 155, 200];
+        return [100, 115, 125];
+      },
+      lineWidthMinPixels: 1,
       pickable: true,
       onHover: (info: any) => {
         setHoveredCountry(info.object?.properties?.name ?? info.object?.properties?.NAME ?? null);
       },
-      updateTriggers: { getFillColor: hoveredCountry },
+      onClick: (info: any) => {
+        if (info.object) {
+          const name = (info.object.properties?.name || info.object.properties?.NAME || '').toUpperCase();
+          if (countriesWithIntel.has(name) && onCountryClick) {
+            onCountryClick(name, info.coordinate);
+            return;
+          }
+        }
+        onFeatureClick(info);
+      },
+      updateTriggers: { getFillColor: [hoveredCountry, countriesWithIntel], getLineColor: [countriesWithIntel] },
     }),
 
     // Country label on hover

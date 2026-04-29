@@ -4,8 +4,12 @@ import { IntelPoint, severityColor } from './IntelligenceLayer';
 
 interface Props {
   point: IntelPoint | null;
+  countryPoints?: IntelPoint[] | null;
+  countryName?: string | null;
   onClose: () => void;
   onFlyTo: (lon: number, lat: number) => void;
+  onSelectPoint?: (p: IntelPoint) => void;
+  onBackToList?: () => void;
 }
 
 const SEVERITY_LABELS: Record<string, string> = {
@@ -82,55 +86,60 @@ function MetaRow({ label, value, accent }: { label: string; value: string; accen
   );
 }
 
-export default function IntelligenceDetailPanel({ point, onClose, onFlyTo }: Props) {
+export default function IntelligenceDetailPanel({ point, countryPoints, countryName, onClose, onFlyTo, onSelectPoint, onBackToList }: Props) {
   const [copied, setCopied] = useState(false);
-  if (!point) return null;
 
-  const [r, g, b] = severityColor(point.severity);
-  const typeMeta = TYPE_META[point.type] ?? { label: 'Intel', icon: '●' };
-  const severityClass = SEVERITY_CLASSES[point.severity] ?? SEVERITY_CLASSES.low;
+  if (point) {
+    const [r, g, b] = severityColor(point.severity);
+    const typeMeta = TYPE_META[point.type] ?? { label: 'Intel', icon: '●' };
+    const severityClass = SEVERITY_CLASSES[point.severity] ?? SEVERITY_CLASSES.low;
 
-  const handleCopy = () => {
-    const text = [
-      point.title,
-      point.description,
-      point.country ? `Country: ${point.country}` : '',
-      point.source ? `Source: ${point.source}` : '',
-      point.date ? `Date: ${point.date}` : '',
-      `Coords: ${point.position[1].toFixed(4)}°, ${point.position[0].toFixed(4)}°`,
-      point.url ? point.url : '',
-    ].filter(Boolean).join('\n');
-    navigator.clipboard?.writeText(text).catch(() => { });
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+    const handleCopy = () => {
+      const text = [
+        point.title,
+        point.description,
+        point.country ? `Country: ${point.country}` : '',
+        point.source ? `Source: ${point.source}` : '',
+        point.date ? `Date: ${point.date}` : '',
+        `Coords: ${point.position[1].toFixed(4)}°, ${point.position[0].toFixed(4)}°`,
+        point.url ? point.url : '',
+      ].filter(Boolean).join('\n');
+      navigator.clipboard?.writeText(text).catch(() => { });
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
 
-  return (
-    <div className="w-[230px] min-w-[230px] bg-[#0a1018] border-l border-[#1e2e40]/60 flex flex-col h-full">
-      {/* Severity stripe */}
-      <div className="h-[3px] w-full shrink-0" style={{ background: `rgb(${r},${g},${b})` }} />
+    return (
+      <div className="w-[230px] min-w-[230px] bg-[#0a1018] border-l border-[#1e2e40]/60 flex flex-col h-full z-50 shadow-2xl shadow-black/50">
+        {/* Severity stripe */}
+        <div className="h-[3px] w-full shrink-0" style={{ background: `rgb(${r},${g},${b})` }} />
 
-      {/* Header */}
-      <div className="px-3.5 py-2.5 border-b border-[#1e2e40]/50 flex items-center justify-between gap-2 shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[14px] leading-none shrink-0">{typeMeta.icon}</span>
-          <span className="text-[9px] uppercase tracking-widest text-gray-600 font-mono truncate">
-            {typeMeta.label}
-          </span>
+        {/* Header */}
+        <div className="px-3.5 py-2.5 border-b border-[#1e2e40]/50 flex items-center justify-between gap-2 shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            {countryPoints && countryPoints.length > 0 && onBackToList && (
+              <button onClick={onBackToList} className="text-gray-400 hover:text-white mr-1 shrink-0" title="Back to list">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              </button>
+            )}
+            <span className="text-[14px] leading-none shrink-0">{typeMeta.icon}</span>
+            <span className="text-[9px] uppercase tracking-widest text-gray-600 font-mono truncate">
+              {typeMeta.label}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded border ${severityClass}`}>
+              {SEVERITY_LABELS[point.severity]}
+            </span>
+            <button onClick={onClose}
+              className="w-5 h-5 flex items-center justify-center rounded text-gray-600 hover:text-gray-300 hover:bg-white/5 transition-colors">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                <line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded border ${severityClass}`}>
-            {SEVERITY_LABELS[point.severity]}
-          </span>
-          <button onClick={onClose}
-            className="w-5 h-5 flex items-center justify-center rounded text-gray-600 hover:text-gray-300 hover:bg-white/5 transition-colors">
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-              <line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-            </svg>
-          </button>
-        </div>
-      </div>
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-3.5 py-3 custom-scrollbar">
@@ -227,4 +236,58 @@ export default function IntelligenceDetailPanel({ point, onClose, onFlyTo }: Pro
       </div>
     </div>
   );
+  }
+
+  // List view for country
+  if (countryPoints && countryName) {
+    return (
+      <div className="w-[260px] min-w-[260px] bg-[#0a1018] border-l border-[#1e2e40]/60 flex flex-col h-full z-50 shadow-2xl shadow-black/50">
+        <div className="px-3.5 py-3 border-b border-[#1e2e40]/50 flex items-center justify-between shrink-0 bg-[#0d1520]">
+          <h2 className="text-[13px] font-bold text-[#e0eef8] uppercase tracking-wider truncate flex-1 flex items-center gap-2">
+            <span>🗺</span> {countryName} 
+            <span className="bg-[#1a2838] text-[9px] px-1.5 py-0.5 rounded text-gray-400 font-mono">{countryPoints.length}</span>
+          </h2>
+          <button onClick={onClose}
+            className="w-5 h-5 flex items-center justify-center rounded text-gray-600 hover:text-gray-300 hover:bg-white/5 transition-colors shrink-0">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto px-2 py-3 custom-scrollbar flex flex-col gap-2 bg-[#05090e]">
+          {countryPoints.length === 0 && (
+             <div className="text-xs text-gray-500 p-4 text-center">No active intel found.</div>
+          )}
+          {countryPoints.map((p) => {
+             const typeMeta = TYPE_META[p.type] ?? { label: 'Intel', icon: '●' };
+             const severityClass = SEVERITY_CLASSES[p.severity] ?? SEVERITY_CLASSES.low;
+             const [r, g, b] = severityColor(p.severity);
+             return (
+               <button key={p.id} onClick={() => onSelectPoint?.(p)} className="flex flex-col text-left p-2.5 rounded bg-[#0d1520] hover:bg-[#111e2a] border border-[#1e2e40]/40 transition-colors w-full relative overflow-hidden group">
+                 <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: `rgb(${r},${g},${b})` }} />
+                 <div className="flex justify-between items-start mb-1.5 pl-2">
+                   <div className="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                     <span className="text-[12px]">{typeMeta.icon}</span>
+                     <span className="text-[9px] uppercase tracking-wider text-gray-400 font-mono">{typeMeta.label}</span>
+                   </div>
+                   <span className={`text-[8px] font-mono px-1 py-0.5 rounded border ${severityClass}`}>
+                     {SEVERITY_LABELS[p.severity]}
+                   </span>
+                 </div>
+                 <h3 className="text-[12px] font-medium text-[#e0eef8] leading-snug line-clamp-2 pl-2 mb-2 group-hover:text-white transition-colors">{p.title}</h3>
+                 <div className="flex justify-between items-center pl-2 w-full">
+                   <span className="text-[9px] text-[#3d7a6a] font-mono truncate pr-2 max-w-[70%]">{p.source || p.date}</span>
+                   {p.meta?.fatalities ? <span className="text-[9px] text-red-400 font-mono shrink-0">{p.meta.fatalities} †</span> : null}
+                 </div>
+               </button>
+             );
+           })}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }

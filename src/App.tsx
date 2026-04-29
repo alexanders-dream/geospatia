@@ -8,6 +8,7 @@ import FeatureDetailPanel from './components/FeatureDetailPanel';
 import IntelligenceDetailPanel from './components/IntelligenceDetailPanel';
 import { FlyToInterpolator } from '@deck.gl/core';
 import { useIntelligenceData, IntelPoint, IntelCategory } from './components/IntelligenceLayer';
+import { Analytics } from "@vercel/analytics/react"
 
 const INITIAL_VIEW_STATE = {
   longitude: 10,
@@ -41,10 +42,17 @@ export default function App() {
   });
   const { data: intelPoints, loading: intelLoading, errors: intelErrors, refetch: refetchIntel } = useIntelligenceData(activeIntelCategories);
   const [selectedIntel, setSelectedIntel] = useState<IntelPoint | null>(null);
+  const [selectedIntelCountry, setSelectedIntelCountry] = useState<string | null>(null);
 
   const toggleIntelCategory = (cat: IntelCategory) => {
     setActiveIntelCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
-    if (selectedIntel?.type === cat) setSelectedIntel(null);
+    if (selectedIntel?.type === cat) {
+      setSelectedIntel(null);
+    }
+    // Also clear country selection if all intel categories are turned off
+    if (selectedIntelCountry && Object.values({ ...activeIntelCategories, [cat]: !activeIntelCategories[cat] }).every(v => !v)) {
+      setSelectedIntelCountry(null);
+    }
   };
 
   const intelPointCounts: Record<string, number> = {};
@@ -110,6 +118,7 @@ export default function App() {
     if (info.object) {
       // Clear any intel selection
       setSelectedIntel(null);
+      setSelectedIntelCountry(null);
       setSelectedFeature(info.object);
 
       const nonZoomableLayers = ['satellites', 'neos', 'aurora', 'sharks', 'cables'];
@@ -130,8 +139,16 @@ export default function App() {
 
   const handleIntelClick = (point: IntelPoint) => {
     setSelectedFeature(null);
+    setSelectedIntelCountry(null);
     setSelectedIntel(point);
     flyTo(point.position[0], point.position[1], 5);
+  };
+
+  const handleCountryClick = (country: string, coord: number[]) => {
+    setSelectedFeature(null);
+    setSelectedIntel(null);
+    setSelectedIntelCountry(country);
+    flyTo(coord[0], coord[1], 4);
   };
 
   const flyTo = (lon: number, lat: number, zoom = 6, duration = 1500) => {
@@ -193,6 +210,7 @@ export default function App() {
           <DeckGLMap
             activeLayers={activeLayers}
             onFeatureClick={handleFeatureClick}
+            onCountryClick={handleCountryClick}
             selectedFeature={selectedFeature}
             viewState={viewState}
             onViewStateChange={setViewState}
@@ -258,11 +276,15 @@ export default function App() {
       )}
 
       {/* Intel detail panel (new) */}
-      {selectedIntel && (
+      {(selectedIntel || selectedIntelCountry) && (
         <IntelligenceDetailPanel
           point={selectedIntel}
-          onClose={() => setSelectedIntel(null)}
+          countryPoints={selectedIntelCountry ? intelPoints.filter(p => p.country?.toUpperCase() === selectedIntelCountry) : null}
+          countryName={selectedIntelCountry}
+          onClose={() => { setSelectedIntel(null); setSelectedIntelCountry(null); }}
           onFlyTo={(lon, lat) => flyTo(lon, lat, 5)}
+          onSelectPoint={(p) => setSelectedIntel(p)}
+          onBackToList={() => setSelectedIntel(null)}
         />
       )}
 
