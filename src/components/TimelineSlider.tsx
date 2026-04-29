@@ -31,7 +31,7 @@ export default function TimelineSlider({ timeOffset, onChange, lat, lng, zoom, a
   return (
     <div className="h-[52px] bg-[#0d1520] border-t border-[#1e2e40]/50 flex items-center px-4">
       {/* Coordinate chips */}
-      <div className="flex items-center mr-4">
+      <div className="hidden md:flex items-center mr-4">
         <div className="flex flex-col mr-4">
           <span className="text-[10px] uppercase tracking-wider text-gray-500">Lat</span>
           <span className="text-sm font-medium text-[#7fd4b0] tabular-nums">{(lat || 0).toFixed(4)}°</span>
@@ -47,7 +47,7 @@ export default function TimelineSlider({ timeOffset, onChange, lat, lng, zoom, a
       </div>
 
       {/* Vertical divider */}
-      <div className="w-px h-6 bg-[#1e2e40] mr-4" />
+      <div className="hidden md:block w-px h-6 bg-[#1e2e40] mr-4" />
 
       {/* Timeline scrubber */}
       <div className={`flex-1 flex items-center gap-2.5 transition-opacity duration-300 ${!activeLayers?.satellites ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>

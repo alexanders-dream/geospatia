@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Menu } from 'lucide-react';
 
 interface TopBarProps {
   onResetView: () => void;
@@ -7,9 +7,10 @@ interface TopBarProps {
   onZoomOut: () => void;
   apiErrors?: Record<string, string>;
   zoom?: number;
+  onMenuToggle?: () => void;
 }
 
-export default function TopBar({ onResetView, onZoomIn, onZoomOut, apiErrors = {}, zoom = 0 }: TopBarProps) {
+export default function TopBar({ onResetView, onZoomIn, onZoomOut, apiErrors = {}, zoom = 0, onMenuToggle }: TopBarProps) {
   const [utcTime, setUtcTime] = useState('');
 
   useEffect(() => {
@@ -29,8 +30,17 @@ export default function TopBar({ onResetView, onZoomIn, onZoomOut, apiErrors = {
   return (
     <>
       {/* Top-left live indicator */}
-      <div className="absolute top-3 left-3 z-10 bg-[#0d1520]/90 border border-[#1e2e40]/50 rounded-md px-3 py-1.5 flex items-center gap-2 text-xs">
-        <div className="w-[6px] h-[6px] rounded-full bg-[#1d9e75]" style={{ animation: 'pulse 1.4s infinite' }} />
+      <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
+        {onMenuToggle && (
+          <button 
+            onClick={onMenuToggle}
+            className="md:hidden bg-[#0d1520]/90 border border-[#1e2e40]/50 rounded-md p-1.5 text-gray-400 hover:text-white pointer-events-auto"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
+        )}
+        <div className="bg-[#0d1520]/90 border border-[#1e2e40]/50 rounded-md px-3 py-1.5 flex items-center gap-2 text-xs pointer-events-auto hidden sm:flex">
+          <div className="w-[6px] h-[6px] rounded-full bg-[#1d9e75]" style={{ animation: 'pulse 1.4s infinite' }} />
         <span className="text-gray-500">LIVE FEED</span>
         <span className="text-[#3d5568] mx-1">·</span>
         <span className="text-[#9ab0c2] font-mono tabular-nums">{utcTime}</span>
@@ -48,6 +58,7 @@ export default function TopBar({ onResetView, onZoomIn, onZoomOut, apiErrors = {
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* Top-right tool buttons */}

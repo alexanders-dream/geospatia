@@ -376,7 +376,12 @@ export default function FeatureDetailPanel({
   };
 
   return (
-    <div className="w-[260px] min-w-[260px] bg-[#0d1520] border-l border-[#1e2e40]/50 flex flex-col h-full">
+    <div className="w-full h-full md:w-[260px] md:min-w-[260px] bg-[#0d1520] border-t md:border-t-0 md:border-l border-[#1e2e40]/50 flex flex-col rounded-t-2xl md:rounded-none">
+      {/* Mobile Drag Handle */}
+      <div className="w-full flex justify-center pt-2.5 pb-1 md:hidden shrink-0 cursor-pointer" onClick={onClose}>
+        <div className="w-10 h-1.5 bg-gray-700/50 rounded-full" />
+      </div>
+
       {/* Header */}
       <div className="px-3.5 py-3 border-b border-[#1e2e40]/50 flex items-center justify-between">
         <span className="text-[10px] uppercase tracking-wider text-gray-600 font-medium">

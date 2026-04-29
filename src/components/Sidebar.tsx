@@ -53,6 +53,7 @@ interface SidebarProps {
   intelErrors: Record<IntelCategory, string | null>;
   intelPointCounts: Record<string, number>;
   onRefetchIntel: (cat: IntelCategory) => void;
+  onMobileClose?: () => void;
 }
 
 // ─── Layer definitions ────────────────────────────────────────────────────────
@@ -342,7 +343,7 @@ function SeverityLegend() {
 export default function Sidebar({
   activeLayers, toggleLayer, activeNodes, layerCounts = {}, loadingStates = {},
   activeIntelCategories, toggleIntelCategory, intelLoading, intelErrors,
-  intelPointCounts, onRefetchIntel,
+  intelPointCounts, onRefetchIntel, onMobileClose,
 }: SidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -382,6 +383,16 @@ export default function Sidebar({
               <span className="text-[10px] font-mono text-[#3d7a6a] bg-[#0a1e18] px-1.5 py-0.5 rounded border border-[#0f3a2a]">
                 {activeNodes.toLocaleString()}
               </span>
+            )}
+            {onMobileClose && (
+              <button 
+                onClick={onMobileClose}
+                className="md:hidden ml-1 w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:bg-white/5"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <path d="M2 2L10 10M10 2L2 10" />
+                </svg>
+              </button>
             )}
           </div>
         </div>

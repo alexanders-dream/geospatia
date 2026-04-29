@@ -18,6 +18,7 @@ const INITIAL_VIEW_STATE = {
 
 export default function App() {
   const [showWelcome, setShowWelcome] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({
     earthquakes: false,
@@ -182,29 +183,42 @@ export default function App() {
   const anyIntelActive = Object.values(activeIntelCategories).some(Boolean);
 
   return (
-    <div className="flex h-screen bg-[#0a0f14]">
-      <Sidebar
-        activeLayers={activeLayers}
-        toggleLayer={toggleLayer}
-        activeNodes={activeNodes}
-        layerCounts={layerCounts}
-        loadingStates={loadingStates}
-        activeIntelCategories={activeIntelCategories}
-        toggleIntelCategory={toggleIntelCategory}
-        intelLoading={intelLoading}
-        intelErrors={intelErrors}
-        intelPointCounts={intelPointCounts}
-        onRefetchIntel={refetchIntel}
-      />
+    <div className="flex h-[100dvh] bg-[#0a0f14] w-full relative overflow-hidden">
+      {/* Mobile Sidebar Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="absolute inset-0 bg-black/60 z-30 md:hidden backdrop-blur-sm" 
+          onClick={() => setMobileMenuOpen(false)} 
+        />
+      )}
 
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <div className="flex-1 relative">
+      {/* Sidebar Container */}
+      <div className={`absolute z-40 md:relative md:block h-full transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+        <Sidebar
+          activeLayers={activeLayers}
+          toggleLayer={toggleLayer}
+          activeNodes={activeNodes}
+          layerCounts={layerCounts}
+          loadingStates={loadingStates}
+          activeIntelCategories={activeIntelCategories}
+          toggleIntelCategory={toggleIntelCategory}
+          intelLoading={intelLoading}
+          intelErrors={intelErrors}
+          intelPointCounts={intelPointCounts}
+          onRefetchIntel={refetchIntel}
+          onMobileClose={() => setMobileMenuOpen(false)}
+        />
+      </div>
+
+      <div className="flex flex-col flex-1 overflow-hidden relative w-full">
+        <div className="flex-1 relative w-full h-full">
           <TopBar
             onResetView={handleResetView}
             onZoomIn={handleZoomIn}
             onZoomOut={handleZoomOut}
             apiErrors={apiErrors}
             zoom={viewState.zoom}
+            onMenuToggle={() => setMobileMenuOpen(true)}
           />
 
           <DeckGLMap
@@ -239,32 +253,35 @@ export default function App() {
         />
       </div>
 
-      {/* Feature detail panel (existing) */}
-      {selectedFeature && !selectedIntel && (
-        <FeatureDetailPanel
-          feature={selectedFeature}
-          onClose={() => setSelectedFeature(null)}
-          onTrack={() => {
-            const pos = selectedFeature.position || selectedFeature.geometry?.coordinates;
-            if (pos) {
-              flyTo(pos[0], pos[1], 5);
-            }
-          }}
-        />
-      )}
+      {/* Detail Panels Container */}
+      <div className={`absolute bottom-0 left-0 w-full z-40 md:relative md:w-auto h-[50dvh] md:h-full transition-transform duration-300 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:shadow-none ${(selectedFeature && !selectedIntel) || selectedIntel || selectedIntelCountry ? 'translate-y-0 md:translate-y-0' : 'translate-y-full md:translate-y-0 hidden md:block'}`}>
+        {/* Feature detail panel (existing) */}
+        {selectedFeature && !selectedIntel && (
+          <FeatureDetailPanel
+            feature={selectedFeature}
+            onClose={() => setSelectedFeature(null)}
+            onTrack={() => {
+              const pos = selectedFeature.position || selectedFeature.geometry?.coordinates;
+              if (pos) {
+                flyTo(pos[0], pos[1], 5);
+              }
+            }}
+          />
+        )}
 
-      {/* Intel detail panel (new) */}
-      {(selectedIntel || selectedIntelCountry) && (
-        <IntelligenceDetailPanel
-          point={selectedIntel}
-          countryPoints={selectedIntelCountry ? intelPoints.filter(p => p.country?.toUpperCase() === selectedIntelCountry) : null}
-          countryName={selectedIntelCountry}
-          onClose={() => { setSelectedIntel(null); setSelectedIntelCountry(null); }}
-          onFlyTo={(lon, lat) => flyTo(lon, lat, 5)}
-          onSelectPoint={(p) => setSelectedIntel(p)}
-          onBackToList={() => setSelectedIntel(null)}
-        />
-      )}
+        {/* Intel detail panel (new) */}
+        {(selectedIntel || selectedIntelCountry) && (
+          <IntelligenceDetailPanel
+            point={selectedIntel}
+            countryPoints={selectedIntelCountry ? intelPoints.filter(p => p.country?.toUpperCase() === selectedIntelCountry) : null}
+            countryName={selectedIntelCountry}
+            onClose={() => { setSelectedIntel(null); setSelectedIntelCountry(null); }}
+            onFlyTo={(lon, lat) => flyTo(lon, lat, 5)}
+            onSelectPoint={(p) => setSelectedIntel(p)}
+            onBackToList={() => setSelectedIntel(null)}
+          />
+        )}
+      </div>
 
       {/* Welcome / Onboarding Panel */}
       {showWelcome && (

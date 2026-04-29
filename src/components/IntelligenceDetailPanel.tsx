@@ -110,9 +110,14 @@ export default function IntelligenceDetailPanel({ point, countryPoints, countryN
     };
 
     return (
-      <div className="w-[260px] min-w-[260px] bg-[#0a1018] border-l border-[#1e2e40]/60 flex flex-col h-full z-50 shadow-2xl shadow-black/50">
+      <div className="w-full h-full md:w-[260px] md:min-w-[260px] bg-[#0a1018] border-t md:border-t-0 md:border-l border-[#1e2e40]/60 flex flex-col rounded-t-2xl md:rounded-none z-50 shadow-2xl shadow-black/50 overflow-hidden">
         {/* Severity stripe */}
         <div className="h-[3px] w-full shrink-0" style={{ background: `rgb(${r},${g},${b})` }} />
+
+        {/* Mobile Drag Handle */}
+        <div className="w-full flex justify-center pt-2 pb-1 md:hidden shrink-0 cursor-pointer bg-[#0d1520]" onClick={onClose}>
+          <div className="w-10 h-1.5 bg-gray-700/50 rounded-full" />
+        </div>
 
         {/* Header */}
         <div className="px-3.5 py-2.5 border-b border-[#1e2e40]/50 flex items-center justify-between gap-2 shrink-0">
@@ -246,7 +251,11 @@ export default function IntelligenceDetailPanel({ point, countryPoints, countryN
     });
 
     return (
-      <div className="w-[260px] min-w-[260px] bg-[#0a1018] border-l border-[#1e2e40]/60 flex flex-col h-full z-50 shadow-2xl shadow-black/50">
+      <div className="w-full h-full md:w-[260px] md:min-w-[260px] bg-[#0a1018] border-t md:border-t-0 md:border-l border-[#1e2e40]/60 flex flex-col rounded-t-2xl md:rounded-none z-50 shadow-2xl shadow-black/50 overflow-hidden">
+        {/* Mobile Drag Handle */}
+        <div className="w-full flex justify-center pt-2.5 pb-1 md:hidden shrink-0 cursor-pointer bg-[#0d1520]" onClick={onClose}>
+          <div className="w-10 h-1.5 bg-gray-700/50 rounded-full" />
+        </div>
         <div className="px-3.5 py-3 border-b border-[#1e2e40]/50 flex items-center justify-between shrink-0 bg-[#0d1520]">
           <h2 className="text-[13px] font-bold text-[#e0eef8] uppercase tracking-wider truncate flex-1 flex items-center gap-2">
             <span>🗺</span> {countryName} 
@@ -271,7 +280,7 @@ export default function IntelligenceDetailPanel({ point, countryPoints, countryN
              const [r, g, b] = severityColor(p.severity);
              
              return (
-               <div key={p.id} className="flex flex-col text-left rounded bg-[#0d1520] border border-[#1e2e40]/40 transition-colors w-full relative overflow-hidden">
+               <div key={p.id} className="flex flex-col text-left rounded bg-[#0d1520] border border-[#1e2e40]/40 transition-colors w-full relative overflow-hidden shrink-0">
                  <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: `rgb(${r},${g},${b})` }} />
                  
                  <div className="p-2.5 pl-4 flex flex-col cursor-pointer hover:bg-[#111e2a]" onClick={() => onSelectPoint?.(p)}>
