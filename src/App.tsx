@@ -5,7 +5,9 @@ import SettingsModal from './components/SettingsModal';
 import TimelineSlider from './components/TimelineSlider';
 import TopBar from './components/TopBar';
 import FeatureDetailPanel from './components/FeatureDetailPanel';
+import IntelligenceDetailPanel from './components/IntelligenceDetailPanel';
 import { FlyToInterpolator } from '@deck.gl/core';
+import { useIntelligenceData, IntelPoint, IntelCategory } from './components/IntelligenceLayer';
 
 const INITIAL_VIEW_STATE = {
   longitude: 10,
@@ -29,19 +31,41 @@ export default function App() {
     sharks: false,
   });
 
+  // ── Intelligence layer state ──────────────────────────────────────────────
+  const [activeIntelCategories, setActiveIntelCategories] = useState<Record<IntelCategory, boolean>>({
+    conflict: false,
+    advisory: false,
+    business: false,
+    disease: false,
+    news: false,
+  });
+  const { data: intelPoints, loading: intelLoading, errors: intelErrors, refetch: refetchIntel } = useIntelligenceData(activeIntelCategories);
+  const [selectedIntel, setSelectedIntel] = useState<IntelPoint | null>(null);
+
+  const toggleIntelCategory = (cat: IntelCategory) => {
+    setActiveIntelCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
+    if (selectedIntel?.type === cat) setSelectedIntel(null);
+  };
+
+  const intelPointCounts: Record<string, number> = {};
+  (['conflict', 'advisory', 'business', 'disease', 'news'] as IntelCategory[]).forEach(cat => {
+    intelPointCounts[cat] = intelPoints.filter(p => p.type === cat).length;
+  });
+
+  // ── Existing state ────────────────────────────────────────────────────────
   const [selectedFeature, setSelectedFeature] = useState<any>(null);
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
   const [activeNodes, setActiveNodes] = useState(0);
+  const [layerCounts, setLayerCounts] = useState<Record<string, number>>({});
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
-  const [timeOffset, setTimeOffset] = useState(0); // in seconds
+  const [timeOffset, setTimeOffset] = useState(0);
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
   const [apiErrors, setApiErrors] = useState<Record<string, string>>({});
 
   const handleApiError = (layer: string, error: string | null) => {
     if (error) {
       setApiErrors(prev => ({ ...prev, [layer]: error }));
-      // Auto-clear after 10 seconds
       setTimeout(() => {
         setApiErrors(prev => {
           const updated = { ...prev };
@@ -62,7 +86,6 @@ export default function App() {
     const key = localStorage.getItem('googleMapsApiKey');
     if (key) setGoogleMapsApiKey(key);
 
-    // Load shared URL parameters
     const params = new URLSearchParams(window.location.search);
     const lat = params.get('lat');
     const lng = params.get('lng');
@@ -85,36 +108,41 @@ export default function App() {
 
   const handleFeatureClick = (info: any) => {
     if (info.object) {
+      // Clear any intel selection
+      setSelectedIntel(null);
       setSelectedFeature(info.object);
-      
-      // Fly to the selected feature ONLY if it's a land-based object
-      const nonZoomableLayers = [
-        'satellites', 'neos', 'aurora', 'sharks', 'cables'
-      ];
-      
+
+      const nonZoomableLayers = ['satellites', 'neos', 'aurora', 'sharks', 'cables'];
       if (info.layer && !nonZoomableLayers.includes(info.layer.id)) {
         let pos = info.object.position || info.object.geometry?.coordinates;
-        
-        // Handle GeoJSON features where coordinates might be nested
-        if (info.object.geometry?.type === 'LineString' || info.object.geometry?.type === 'MultiLineString') {
-           // Don't zoom to lines for now, or pick the first point
-           return;
-        }
-
+        if (
+          info.object.geometry?.type === 'LineString' ||
+          info.object.geometry?.type === 'MultiLineString'
+        ) return;
         if (pos && pos.length >= 2) {
-          setViewState(prev => ({
-            ...prev,
-            longitude: pos[0],
-            latitude: pos[1],
-            zoom: 6,
-            transitionDuration: 1500,
-            transitionInterpolator: new FlyToInterpolator()
-          }));
+          flyTo(pos[0], pos[1], 6);
         }
       }
     } else {
       setSelectedFeature(null);
     }
+  };
+
+  const handleIntelClick = (point: IntelPoint) => {
+    setSelectedFeature(null);
+    setSelectedIntel(point);
+    flyTo(point.position[0], point.position[1], 5);
+  };
+
+  const flyTo = (lon: number, lat: number, zoom = 6, duration = 1500) => {
+    setViewState(prev => ({
+      ...prev,
+      longitude: lon,
+      latitude: lat,
+      zoom,
+      transitionDuration: duration,
+      transitionInterpolator: new FlyToInterpolator()
+    }));
   };
 
   const handleResetView = () => {
@@ -127,21 +155,14 @@ export default function App() {
     } as any);
   };
 
-  const handleZoomIn = () => {
-    setViewState(prev => ({
-      ...prev,
-      zoom: prev.zoom + 1,
-      transitionDuration: 500
-    }));
-  };
+  const handleZoomIn = () =>
+    setViewState(prev => ({ ...prev, zoom: prev.zoom + 1, transitionDuration: 500 }));
 
-  const handleZoomOut = () => {
-    setViewState(prev => ({
-      ...prev,
-      zoom: Math.max(0, prev.zoom - 1),
-      transitionDuration: 500
-    }));
-  };
+  const handleZoomOut = () =>
+    setViewState(prev => ({ ...prev, zoom: Math.max(0, prev.zoom - 1), transitionDuration: 500 }));
+
+  // Is any intel category active?
+  const anyIntelActive = Object.values(activeIntelCategories).some(Boolean);
 
   return (
     <div className="flex h-screen bg-[#0a0f14]">
@@ -149,10 +170,17 @@ export default function App() {
         activeLayers={activeLayers}
         toggleLayer={toggleLayer}
         activeNodes={activeNodes}
+        layerCounts={layerCounts}
         loadingStates={loadingStates}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        activeIntelCategories={activeIntelCategories}
+        toggleIntelCategory={toggleIntelCategory}
+        intelLoading={intelLoading}
+        intelErrors={intelErrors}
+        intelPointCounts={intelPointCounts}
+        onRefetchIntel={refetchIntel}
       />
-      
+
       <div className="flex flex-col flex-1 overflow-hidden">
         <div className="flex-1 relative">
           <TopBar
@@ -169,10 +197,15 @@ export default function App() {
             viewState={viewState}
             onViewStateChange={setViewState}
             onNodeCountChange={setActiveNodes}
+            onLayerCountsChange={setLayerCounts}
             onLayerLoading={setLoadingStates}
             onApiError={handleApiError}
             googleMapsApiKey={googleMapsApiKey}
             timeOffset={timeOffset}
+            // ── New intel props ──
+            intelPoints={intelPoints}
+            onIntelClick={handleIntelClick}
+            selectedIntelId={selectedIntel?.id}
           />
 
           {/* API Error Notifications */}
@@ -191,6 +224,8 @@ export default function App() {
               </div>
             </div>
           )}
+
+          {/* Intelligence functionality is now in Sidebar */}
         </div>
 
         <TimelineSlider
@@ -201,38 +236,36 @@ export default function App() {
           alt={Math.round(6378137 * Math.pow(2, -viewState.zoom) / 1000)}
         />
       </div>
-      
-      {selectedFeature && (
+
+      {/* Feature detail panel (existing) */}
+      {selectedFeature && !selectedIntel && (
         <FeatureDetailPanel
           feature={selectedFeature}
           onClose={() => setSelectedFeature(null)}
           onTrack={() => {
             const pos = selectedFeature.position || selectedFeature.geometry?.coordinates;
-            if (pos && pos.length >= 2) {
-              setViewState(prev => ({
-                ...prev,
-                longitude: pos[0],
-                latitude: pos[1],
-                zoom: 8,
-                transitionDuration: 1500,
-                transitionInterpolator: new FlyToInterpolator()
-              }));
-            }
+            if (pos?.length >= 2) flyTo(pos[0], pos[1], 8);
           }}
-          onHistory={() => {
-            // Set time offset to show historical position
-            setTimeOffset(-3600 * 6); // 6 hours ago
-          }}
+          onHistory={() => setTimeOffset(-3600 * 6)}
           onShare={() => {
             const pos = selectedFeature.position || selectedFeature.geometry?.coordinates;
-            if (pos && pos.length >= 2) {
+            if (pos?.length >= 2) {
               const url = `${window.location.origin}${window.location.pathname}?lat=${pos[1]}&lng=${pos[0]}&zoom=8`;
-              navigator.clipboard?.writeText(url).catch(() => {});
+              navigator.clipboard?.writeText(url).catch(() => { });
             }
           }}
         />
       )}
-      
+
+      {/* Intel detail panel (new) */}
+      {selectedIntel && (
+        <IntelligenceDetailPanel
+          point={selectedIntel}
+          onClose={() => setSelectedIntel(null)}
+          onFlyTo={(lon, lat) => flyTo(lon, lat, 5)}
+        />
+      )}
+
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
