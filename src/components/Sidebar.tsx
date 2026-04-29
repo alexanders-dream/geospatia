@@ -410,7 +410,7 @@ export default function Sidebar({
 
         {/* Geo layers */}
         {filteredGroups.map(group => (
-          <CollapsibleSection key={group.id} id={group.id} title={group.name}>
+          <CollapsibleSection key={group.id} id={group.id} title={group.name} defaultOpen={false}>
             {group.layers.map(layer => (
               <LayerRow
                 key={layer.id}

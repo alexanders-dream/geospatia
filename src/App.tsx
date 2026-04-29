@@ -154,14 +154,14 @@ export default function App() {
     flyTo(coord[0], coord[1], 4);
   };
 
-  const flyTo = (lon: number, lat: number, zoom = 6, duration = 1500) => {
+  const flyTo = (lon: number, lat: number, zoom = 6, duration = 3000) => {
     setViewState(prev => ({
       ...prev,
       longitude: lon,
       latitude: lat,
       zoom,
       transitionDuration: duration,
-      transitionInterpolator: new FlyToInterpolator()
+      transitionInterpolator: new FlyToInterpolator({ curve: 1.2 })
     }));
   };
 
@@ -208,6 +208,7 @@ export default function App() {
             onZoomIn={handleZoomIn}
             onZoomOut={handleZoomOut}
             onOpenSettings={() => setIsSettingsOpen(true)}
+            apiErrors={apiErrors}
           />
 
           <DeckGLMap
@@ -229,23 +230,6 @@ export default function App() {
             selectedIntelId={selectedIntel?.id}
             selectedIntelCountry={selectedIntelCountry}
           />
-
-          {/* API Error Notifications */}
-          {Object.keys(apiErrors).length > 0 && (
-            <div className="absolute top-6 left-6 z-10">
-              <div className="flex flex-col gap-2">
-                {Object.entries(apiErrors).map(([layer, error]) => (
-                  <div
-                    key={layer}
-                    className="bg-amber-500/90 backdrop-blur-md text-black px-4 py-2 rounded-lg text-xs font-mono flex items-center gap-2 shadow-lg animate-pulse"
-                  >
-                    <span className="font-bold">⚠ {layer}:</span>
-                    <span>{error}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Intelligence functionality is now in Sidebar */}
         </div>

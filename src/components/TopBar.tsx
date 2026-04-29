@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { AlertTriangle } from 'lucide-react';
 
 interface TopBarProps {
   onResetView: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onOpenSettings: () => void;
+  apiErrors?: Record<string, string>;
 }
 
-export default function TopBar({ onResetView, onZoomIn, onZoomOut, onOpenSettings }: TopBarProps) {
+export default function TopBar({ onResetView, onZoomIn, onZoomOut, onOpenSettings, apiErrors = {} }: TopBarProps) {
   const [utcTime, setUtcTime] = useState('');
 
   useEffect(() => {
@@ -32,6 +34,20 @@ export default function TopBar({ onResetView, onZoomIn, onZoomOut, onOpenSetting
         <span className="text-gray-500">LIVE FEED</span>
         <span className="text-[#3d5568] mx-1">·</span>
         <span className="text-[#9ab0c2] font-mono tabular-nums">{utcTime}</span>
+        {Object.keys(apiErrors).length > 0 && (
+          <div className="relative group flex items-center ml-2">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 cursor-help" />
+            <div className="absolute top-full left-0 mt-2 w-64 bg-[#0a1018] border border-[#1e2e40] rounded-md shadow-xl p-2 hidden group-hover:flex flex-col gap-1.5 z-50">
+              <div className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mb-1">API Errors</div>
+              {Object.entries(apiErrors).map(([layer, err]) => (
+                <div key={layer} className="text-[10px] flex items-start gap-1.5">
+                  <span className="text-amber-500 font-bold shrink-0">{layer}:</span>
+                  <span className="text-gray-400 leading-tight">{err}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Top-right tool buttons */}
