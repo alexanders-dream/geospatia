@@ -527,7 +527,7 @@ export default function DeckGLMap({
       case 'cable': return `🔌 ${object.properties?.name}`;
       case 'wildlife': return `🌿 ${object.name}${object.scientificName ? `\n(${object.scientificName})` : ''}\nObserver: ${object.user || 'Unknown'}`;
       case 'satellite': return `🛰 ${object.name}`;
-      case 'iss': return `ISS — Alt: ${object.altitude?.toFixed(1)} km`;
+      case 'iss': return `ISS — Alt: ${Number(object.altitude || 0).toFixed(1)} km`;
       case 'fireball': return `💥 Fireball — ${object.energy} kt TNT\n${object.date}`;
       case 'tsunami': return `🌊 ${object.properties?.event ?? 'Alert'}`;
       case 'conflict': return `⚔ ${object.title}\n${object.description?.slice(0, 80)}`;

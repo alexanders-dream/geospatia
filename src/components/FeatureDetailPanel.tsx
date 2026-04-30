@@ -163,10 +163,10 @@ const typeConfigs: Record<string, TypeConfig> = {
     getRows: (f) => {
       const props = f.properties || f;
       return [
-        { key: 'Latitude', value: props.latitude != null ? `${props.latitude.toFixed(4)}°` : 'N/A', accent: true },
-        { key: 'Longitude', value: props.longitude != null ? `${props.longitude.toFixed(4)}°` : 'N/A', accent: true },
-        { key: 'Altitude', value: props.altitude != null ? `${props.altitude.toFixed(1)} km` : 'N/A' },
-        { key: 'Velocity', value: props.velocity != null ? `${props.velocity.toFixed(1)} km/h` : 'N/A' },
+        { key: 'Latitude', value: props.latitude != null ? `${Number(props.latitude).toFixed(4)}°` : 'N/A', accent: true },
+        { key: 'Longitude', value: props.longitude != null ? `${Number(props.longitude).toFixed(4)}°` : 'N/A', accent: true },
+        { key: 'Altitude', value: props.altitude != null ? `${Number(props.altitude).toFixed(1)} km` : 'N/A' },
+        { key: 'Velocity', value: props.velocity != null ? `${Number(props.velocity).toFixed(1)} km/h` : 'N/A' },
         { key: 'Visibility', value: props.visibility || 'N/A' },
         { key: 'Last Updated', value: props.lastUpdated ? new Date(props.lastUpdated).toLocaleString() : 'N/A' },
       ];
@@ -182,8 +182,8 @@ const typeConfigs: Record<string, TypeConfig> = {
       const props = f.properties || f;
       return [
         { key: 'Date/Time', value: props.date || 'N/A' },
-        { key: 'Latitude', value: props.latitude != null ? `${props.latitude.toFixed(4)}°` : 'N/A', accent: true },
-        { key: 'Longitude', value: props.longitude != null ? `${props.longitude.toFixed(4)}°` : 'N/A', accent: true },
+        { key: 'Latitude', value: props.latitude != null ? `${Number(props.latitude).toFixed(4)}°` : 'N/A', accent: true },
+        { key: 'Longitude', value: props.longitude != null ? `${Number(props.longitude).toFixed(4)}°` : 'N/A', accent: true },
         { key: 'Energy', value: props.energy != null ? `${props.energy} kt TNT` : 'N/A' },
         { key: 'Energy Range', value: (props.energyMin != null && props.energyMax != null) ? `${props.energyMin} - ${props.energyMax} kt TNT` : 'N/A' },
         { key: 'Altitude', value: props.altitude != null ? `${props.altitude} km` : 'N/A' },
@@ -233,7 +233,7 @@ const defaultConfig: TypeConfig = {
     const props = f.properties || f;
     return [
       { key: 'Type', value: f.featureType || props.featureType || 'Unknown' },
-      { key: 'Coordinates', value: f.position ? `${f.position[0]?.toFixed(2)}, ${f.position[1]?.toFixed(2)}` : 'N/A' },
+      { key: 'Coordinates', value: f.position ? `${Number(f.position[0] || 0).toFixed(2)}, ${Number(f.position[1] || 0).toFixed(2)}` : 'N/A' },
     ];
   },
   getChartData: () => null,
@@ -369,7 +369,7 @@ export default function FeatureDetailPanel({
     if (!feature) return;
     const pos = feature.position || feature.properties?.position || feature.geometry?.coordinates;
     if (pos && pos.length >= 2) {
-      navigator.clipboard.writeText(`${pos[1].toFixed(4)}, ${pos[0].toFixed(4)}`);
+      navigator.clipboard.writeText(`${Number(pos[1] || 0).toFixed(4)}, ${Number(pos[0] || 0).toFixed(4)}`);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }

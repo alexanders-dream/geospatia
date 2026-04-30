@@ -101,7 +101,7 @@ export default function IntelligenceDetailPanel({ point, countryPoints, countryN
         point.country ? `Country: ${point.country}` : '',
         point.source ? `Source: ${point.source}` : '',
         point.date ? `Date: ${point.date}` : '',
-        `Coords: ${point.position[1].toFixed(4)}°, ${point.position[0].toFixed(4)}°`,
+        `Coords: ${Number(point.position[1] || 0).toFixed(4)}°, ${Number(point.position[0] || 0).toFixed(4)}°`,
         point.url ? point.url : '',
       ].filter(Boolean).join('\n');
       navigator.clipboard?.writeText(text).catch(() => { });
@@ -187,8 +187,8 @@ export default function IntelligenceDetailPanel({ point, countryPoints, countryN
 
         {/* Key/value rows */}
         <div className="mt-3">
-          <MetaRow label="Latitude" value={`${point.position[1].toFixed(4)}°`} accent />
-          <MetaRow label="Longitude" value={`${point.position[0].toFixed(4)}°`} accent />
+          <MetaRow label="Latitude" value={`${Number(point.position[1] || 0).toFixed(4)}°`} accent />
+          <MetaRow label="Longitude" value={`${Number(point.position[0] || 0).toFixed(4)}°`} accent />
           {point.source && <MetaRow label="Source" value={point.source} />}
           {point.meta?.actor1 && point.meta.actor1 !== '' && (
             <MetaRow label="Actor 1" value={point.meta.actor1} />
@@ -203,7 +203,7 @@ export default function IntelligenceDetailPanel({ point, countryPoints, countryN
             <MetaRow label="Language" value={point.meta.language} />
           )}
           {point.meta?.tone != null && (
-            <MetaRow label="Sentiment" value={`${point.meta.tone > 0 ? '+' : ''}${point.meta.tone.toFixed(1)}`} />
+            <MetaRow label="Sentiment" value={`${point.meta.tone > 0 ? '+' : ''}${Number(point.meta.tone || 0).toFixed(1)}`} />
           )}
         </div>
       </div>

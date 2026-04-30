@@ -34,15 +34,15 @@ export default function TimelineSlider({ timeOffset, onChange, lat, lng, zoom, a
       <div className="hidden md:flex items-center mr-4">
         <div className="flex flex-col mr-4">
           <span className="text-[10px] uppercase tracking-wider text-gray-500">Lat</span>
-          <span className="text-sm font-medium text-[#7fd4b0] tabular-nums">{(lat || 0).toFixed(4)}°</span>
+          <span className="text-sm font-medium text-[#7fd4b0] tabular-nums">{Number(lat || 0).toFixed(4)}°</span>
         </div>
         <div className="flex flex-col mr-4">
           <span className="text-[10px] uppercase tracking-wider text-gray-500">Lng</span>
-          <span className="text-sm font-medium text-[#7fd4b0] tabular-nums">{(lng || 0).toFixed(4)}°</span>
+          <span className="text-sm font-medium text-[#7fd4b0] tabular-nums">{Number(lng || 0).toFixed(4)}°</span>
         </div>
         <div className="flex flex-col mr-4">
           <span className="text-[10px] uppercase tracking-wider text-gray-500">Zoom</span>
-          <span className="text-sm font-medium text-[#7fd4b0] tabular-nums">{zoom?.toFixed(1)}</span>
+          <span className="text-sm font-medium text-[#7fd4b0] tabular-nums">{Number(zoom || 0).toFixed(1)}</span>
         </div>
       </div>
 
